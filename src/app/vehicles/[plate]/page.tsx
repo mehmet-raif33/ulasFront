@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface VehiclePageProps {
-    params: { plate: string };
+    params: Promise<{ plate: string }>;
 }
 
 interface VehicleData {
@@ -50,11 +50,23 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
     const [vehicle, setVehicle] = useState<VehicleData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("overview");
+    const [plate, setPlate] = useState<string>("");
+
+    // Handle async params
+    useEffect(() => {
+        const getParams = async () => {
+            const resolvedParams = await params;
+            setPlate(resolvedParams.plate);
+        };
+        getParams();
+    }, [params]);
 
     // Mock data - in real app, this would come from API
     useEffect(() => {
+        if (!plate) return;
+
         const mockVehicle: VehicleData = {
-            plate: params.plate,
+            plate: plate,
             brand: "Toyota",
             model: "Corolla",
             year: 2022,
@@ -129,7 +141,7 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
             setVehicle(mockVehicle);
             setIsLoading(false);
         }, 500);
-    }, [params.plate]);
+    }, [plate]);
 
     const getStatusColor = (status: string) => {
         switch (status) {

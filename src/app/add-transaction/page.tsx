@@ -1,10 +1,7 @@
 "use client"
 import React, { useState } from "react";
-import { useSelector } from 'react-redux';
-import { selectUser } from '../redux/sliceses/authSlices';
 
 const AddTransactionPage: React.FC = () => {
-    const user = useSelector(selectUser);
     const [formData, setFormData] = useState({
         vehiclePlate: '',
         driverName: '',

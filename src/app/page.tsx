@@ -1,11 +1,9 @@
 "use client"
 import './globals.css'
-import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { selectIsLoggedIn, selectUser } from './redux/sliceses/authSlices';
+import { selectUser } from './redux/sliceses/authSlices';
 
 export default function Home() {
-  const isLoggedIn = useSelector(selectIsLoggedIn);
   const user = useSelector(selectUser);
 
   // Mock data for dashboard

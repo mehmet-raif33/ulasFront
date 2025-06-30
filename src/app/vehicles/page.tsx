@@ -1,10 +1,7 @@
 "use client"
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { selectUser } from '../redux/sliceses/authSlices';
 
 const VehiclesPage: React.FC = () => {
-    const user = useSelector(selectUser);
     const [showAddForm, setShowAddForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [formData, setFormData] = useState({
