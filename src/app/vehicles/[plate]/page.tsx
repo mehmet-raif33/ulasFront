@@ -1,6 +1,8 @@
 "use client"
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
 
 interface VehiclePageProps {
     params: Promise<{ plate: string }>;
@@ -51,6 +53,7 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("overview");
     const [plate, setPlate] = useState<string>("");
+    const theme = useSelector((state: RootState) => state.theme.theme);
 
     // Handle async params
     useEffect(() => {
@@ -163,10 +166,10 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
 
     if (isLoading) {
         return (
-            <div className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Araç bilgileri yükleniyor...</p>
+            <div className={`flex-1 bg-gradient-to-br min-h-screen flex items-center justify-center ${theme === 'dark' ? 'from-slate-900 to-blue-950' : 'from-slate-50 via-blue-50 to-indigo-50'}`}>
+                <div className={`text-center ${theme === 'dark' ? 'text-gray-200' : 'text-gray-600'}`}>
+                    <div className={`animate-spin rounded-full h-16 w-16 border-b-2 mx-auto mb-4 ${theme === 'dark' ? 'border-blue-400' : 'border-blue-600'}`}></div>
+                    <p className="font-medium">Araç bilgileri yükleniyor...</p>
                 </div>
             </div>
         );
@@ -174,29 +177,25 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
 
     if (!vehicle) {
         return (
-            <div className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen flex items-center justify-center">
-                <div className="text-center">
+            <div className={`flex-1 bg-gradient-to-br min-h-screen flex items-center justify-center ${theme === 'dark' ? 'from-slate-900 to-blue-950' : 'from-slate-50 via-blue-50 to-indigo-50'}`}>
+                <div className={`text-center ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
                     <div className="text-6xl mb-4">🚗</div>
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Araç Bulunamadı</h1>
-                    <p className="text-gray-600 mb-4">Bu plakaya sahip araç sistemde bulunmamaktadır.</p>
-                    <Link href="/vehicles" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                        Araçlara Dön
-                    </Link>
+                    <h1 className={`text-2xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Araç Bulunamadı</h1>
+                    <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Bu plakaya sahip araç sistemde bulunmamaktadır.</p>
+                    <Link href="/vehicles" className={`px-6 py-3 rounded-lg transition-colors ${theme === 'dark' ? 'bg-blue-800 text-white hover:bg-blue-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>Araçlara Dön</Link>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex-1 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen p-6">
+        <div className={`flex-1 bg-gradient-to-br min-h-screen p-6 ${theme === 'dark' ? 'from-slate-900 to-blue-950' : 'from-slate-50 via-blue-50 to-indigo-50'}`}>
             {/* Header */}
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-4">
-                        <Link href="/vehicles" className="text-blue-600 hover:text-blue-700 transition-colors">
-                            ← Araçlara Dön
-                        </Link>
-                        <h1 className="text-3xl font-bold text-gray-800">Araç Detayları</h1>
+                        <Link href="/vehicles" className={`transition-colors ${theme === 'dark' ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-700'}`}>← Araçlara Dön</Link>
+                        <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Araç Detayları</h1>
                     </div>
                     <div className="flex items-center space-x-3">
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(vehicle.status)}`}>
