@@ -27,40 +27,49 @@ export default function ThemeEffect() {
   return null;
 }
 
-function getDefaultPosition() {
-  if (typeof window !== "undefined") {
-    if (window.innerWidth >= 1024) {
-      // Desktop: top left
-      return { x: 24, y: 48 };
-    } else {
-      // Mobile/tablet: bottom right
-      return { x: window.innerWidth - 80, y: window.innerHeight - 120 };
-    }
-  }
-  return { x: 24, y: 48 };
-}
-
 export function ThemeFAB() {
   const theme = useSelector((state: RootState) => state.theme.theme);
   const dispatch = useDispatch();
-  const [position, setPosition] = useState(getDefaultPosition());
+  const [position, setPosition] = useState({ x: 24, y: 48 }); // Default position
   const [dragging, setDragging] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const offset = useRef({ x: 0, y: 0 });
 
-  // Load position from localStorage
+  // Set mounted to true after hydration
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    setMounted(true);
+  }, []);
+
+  // Initialize position after mounting
+  useEffect(() => {
+    if (mounted) {
+      let initialPosition = { x: 24, y: 48 };
+      
+      // Check localStorage first
       const saved = localStorage.getItem("theme-fab-pos");
       if (saved) {
         try {
           const pos = JSON.parse(saved);
           if (typeof pos.x === "number" && typeof pos.y === "number") {
-            setPosition(pos);
+            initialPosition = pos;
           }
         } catch {}
+      } else {
+        // Set default position based on screen size
+        if (window.innerWidth >= 1024) {
+          // Desktop: top left
+          initialPosition = { x: 24, y: 48 };
+        } else {
+          // Mobile/tablet: bottom right
+          initialPosition = { x: window.innerWidth - 80, y: window.innerHeight - 120 };
+        }
       }
+      
+      setPosition(initialPosition);
     }
-  }, []);
+  }, [mounted]);
+
+
 
   // Save position to localStorage
   useEffect(() => {
@@ -112,6 +121,11 @@ export function ThemeFAB() {
     setDragging(false);
     window.removeEventListener("touchmove", onTouchMove);
     window.removeEventListener("touchend", onTouchEnd);
+  }
+
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return null;
   }
 
   return (

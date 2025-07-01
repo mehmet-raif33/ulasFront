@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
+import Link from "next/link";
+import { motion } from 'framer-motion';
 
 // Define Personnel type
 interface Personnel {
@@ -105,14 +107,19 @@ const PersonnelPage: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen flex flex-col bg-gradient-to-br p-2 sm:p-6 ${
+      className={`min-h-screen flex flex-col bg-gradient-to-br p-4 sm:p-8 ${
         theme === "dark"
           ? "from-slate-900 to-blue-950"
           : "from-slate-50 to-blue-50"
       }`}
     >
       {/* Header */}
-      <div className="mb-4 sm:mb-8">
+      <motion.div 
+        className="mb-4 sm:mb-8"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         <h1
           className={`text-xl sm:text-3xl font-bold mb-1 ${
             theme === "dark" ? "text-gray-100" : "text-gray-800"
@@ -123,18 +130,26 @@ const PersonnelPage: React.FC = () => {
         <p className={theme === "dark" ? "text-gray-300" : "text-gray-600"}>
           Personel bilgilerini görüntüleyin ve yönetin
         </p>
-      </div>
+      </motion.div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-6 mb-4 sm:mb-8">
-        {statCards.map((card) => (
-          <div
+      <motion.div 
+        className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-8 mb-6 sm:mb-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        {statCards.map((card, index) => (
+          <motion.div
             key={card.label}
-            className={`flex items-center gap-3 rounded-xl p-3 sm:p-6 shadow-sm border ${
+            className={`flex items-center gap-4 rounded-xl p-4 sm:p-8 shadow-sm border ${
               theme === "dark"
                 ? "bg-slate-800 border-slate-700"
                 : "bg-white border-gray-200"
             }`}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 + (index * 0.1) }}
           >
             <div
               className={`w-10 h-10 sm:w-12 sm:h-12 ${card.color} text-white rounded-lg flex items-center justify-center text-xl sm:text-2xl`}
@@ -157,12 +172,17 @@ const PersonnelPage: React.FC = () => {
                 {card.getValue(personnel)}
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Search & Add */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4">
+      <motion.div 
+        className="flex gap-3 mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.8 }}
+      >
         <input
           type="text"
           placeholder="Personel ara..."
@@ -176,119 +196,210 @@ const PersonnelPage: React.FC = () => {
         />
         <button
           onClick={() => setShowAddForm(true)}
-          className={`w-full sm:w-auto bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center gap-2 text-sm sm:text-base`}
+          className={`px-3 py-2 sm:px-4 sm:py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center text-lg sm:text-xl ${
+            theme === "dark" 
+              ? "bg-slate-800 text-white" 
+              : "bg-blue-600 text-white hover:bg-blue-700"
+          }`}
+          title="Yeni Personel Ekle"
         >
-          <span>➕</span>
-          <span>Yeni Personel</span>
+          ➕
         </button>
-      </div>
+      </motion.div>
 
       {/* Personnel List */}
       {/* Mobile: Cards, Desktop: Table */}
-      <div className="block sm:hidden space-y-3">
+      <motion.div 
+        className="block sm:hidden space-y-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 1.0 }}
+      >
         {personnel.length === 0 && (
-          <div className="text-center text-gray-400 py-8">Kayıt bulunamadı.</div>
+          <div className={`text-center py-8 ${
+            theme === "dark" ? "text-gray-500" : "text-gray-400"
+          }`}>Kayıt bulunamadı.</div>
         )}
-        {personnel.map((person) => (
-          <div
+        {personnel.map((person, index) => (
+          <motion.div
             key={person.id}
-            className={`rounded-xl p-4 shadow-sm border flex flex-col gap-2 ${
-              theme === "dark"
-                ? "bg-slate-800 border-slate-700"
-                : "bg-white border-gray-200"
-            }`}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 1.2 + (index * 0.1) }}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-600 font-semibold text-lg">
-                  {person.name.charAt(0)}
+            <Link
+              href={`/auth/userPage?id=${person.id}&name=${encodeURIComponent(person.name)}&email=${encodeURIComponent(person.email)}&role=${encodeURIComponent(person.position)}&department=${encodeURIComponent(person.department)}&phone=${encodeURIComponent(person.phone)}&status=${person.status}`}
+              className={`rounded-xl p-5 shadow-sm border flex flex-col gap-3 transition-all duration-200 hover:shadow-md hover:scale-[1.02] cursor-pointer ${
+                theme === "dark"
+                  ? "bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600"
+                  : "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  theme === "dark" 
+                    ? "bg-blue-900" 
+                    : "bg-blue-100"
+                }`}>
+                  <span className={`font-semibold text-lg ${
+                    theme === "dark" 
+                      ? "text-blue-200" 
+                      : "text-blue-600"
+                  }`}>
+                    {person.name.charAt(0)}
+                  </span>
+                </div>
+                <div>
+                  <div
+                    className={`text-base font-medium ${
+                      theme === "dark" ? "text-gray-100" : "text-gray-800"
+                    }`}
+                  >
+                    {person.name}
+                  </div>
+                  <div
+                    className={`text-xs ${
+                      theme === "dark" ? "text-gray-300" : "text-gray-500"
+                    }`}
+                  >
+                    {person.email}
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className={`font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>Pozisyon:</span> 
+                <span className={theme === "dark" ? "text-gray-100" : "text-gray-800"}>{person.position}</span>
+                <span className={`font-medium ml-2 ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>Departman:</span> 
+                <span className={theme === "dark" ? "text-gray-100" : "text-gray-800"}>{person.department}</span>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className={`font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>Telefon:</span> 
+                <span className={theme === "dark" ? "text-gray-100" : "text-gray-800"}>{person.phone}</span>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(person.status, theme)}`}>
+                  {person.status === "active" ? "Aktif" : "Pasif"}
                 </span>
-              </div>
-              <div>
-                <div
-                  className={`text-base font-medium ${
-                    theme === "dark" ? "text-gray-100" : "text-gray-800"
-                  }`}
-                >
-                  {person.name}
-                </div>
-                <div
-                  className={`text-xs ${
-                    theme === "dark" ? "text-gray-300" : "text-gray-500"
-                  }`}
-                >
-                  {person.email}
+                <div className="flex gap-2">
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors ${theme === "dark" ? "bg-blue-900 text-blue-200 hover:bg-blue-800" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}
+                  >
+                    Düzenle
+                  </button>
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors ${theme === "dark" ? "bg-red-900 text-red-200 hover:bg-red-800" : "bg-red-100 text-red-700 hover:bg-red-200"}`}
+                  >
+                    Sil
+                  </button>
                 </div>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <span className="font-medium">Pozisyon:</span> {person.position}
-              <span className="font-medium ml-2">Departman:</span> {person.department}
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <span className="font-medium">Telefon:</span> {person.phone}
-              <span className="font-medium ml-2">Durum:</span>
-              <span className={`px-2 py-0.5 rounded-full font-medium ${getStatusColor(person.status, theme)}`}>
-                {person.status === "active" ? "Aktif" : "Pasif"}
-              </span>
-            </div>
-            <div className="flex gap-2 pt-2">
-              <button className={`text-blue-600 ${theme === "dark" ? "text-blue-400 hover:text-blue-300" : "hover:text-blue-900"} text-xs font-medium`}>Düzenle</button>
-              <button className={`text-red-600 ${theme === "dark" ? "text-red-400 hover:text-red-300" : "hover:text-red-900"} text-xs font-medium`}>Sil</button>
-            </div>
-          </div>
+            </Link>
+          </motion.div>
         ))}
-      </div>
-      <div className="hidden sm:block overflow-x-auto rounded-xl">
-        <table className={`min-w-[700px] w-full text-sm ${theme === "dark" ? "bg-slate-900" : "bg-slate-50"}`}>
-          <thead className={`sticky top-0 z-10 ${theme === "dark" ? "bg-slate-900" : "bg-gray-50"}`}>
+      </motion.div>
+
+      {/* Desktop Table */}
+      <motion.div 
+        className="hidden sm:block overflow-x-auto rounded-xl"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 1.0 }}
+      >
+        <table className={`min-w-[700px] w-full text-sm ${theme === "dark" ? "bg-slate-800" : "bg-slate-50"}`}>
+          <thead className={`sticky top-0 z-10 ${theme === "dark" ? "bg-slate-800" : "bg-gray-50"}`}>
             <tr>
-              <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Personel</th>
-              <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Pozisyon</th>
-              <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Departman</th>
-              <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">İletişim</th>
-              <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Durum</th>
-              <th className="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
+              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
+                theme === "dark" ? "text-gray-300" : "text-gray-500"
+              }`}>Personel</th>
+              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
+                theme === "dark" ? "text-gray-300" : "text-gray-500"
+              }`}>Pozisyon</th>
+              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
+                theme === "dark" ? "text-gray-300" : "text-gray-500"
+              }`}>Departman</th>
+              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
+                theme === "dark" ? "text-gray-300" : "text-gray-500"
+              }`}>İletişim</th>
+              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
+                theme === "dark" ? "text-gray-300" : "text-gray-500"
+              }`}>Durum</th>
+              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
+                theme === "dark" ? "text-gray-300" : "text-gray-500"
+              }`}>İşlemler</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${theme === "dark" ? "divide-slate-700" : "divide-gray-200"}`}>
             {personnel.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center text-gray-400 py-8">Kayıt bulunamadı.</td>
+                <td colSpan={6} className={`text-center py-8 ${
+                  theme === "dark" ? "text-gray-500" : "text-gray-400"
+                }`}>Kayıt bulunamadı.</td>
               </tr>
             )}
-            {personnel.map((person) => (
-              <tr key={person.id} className={`hover:${theme === "dark" ? "bg-slate-800" : "bg-gray-100"} transition-colors`}>
+            {personnel.map((person, index) => (
+              <motion.tr 
+                key={person.id} 
+                className={`hover:${theme === "dark" ? "bg-slate-700" : "bg-gray-100"} transition-colors`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.2 + (index * 0.1) }}
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-semibold">
-                        {person.name.charAt(0)}
-                      </span>
+                  <Link
+                    href={`/auth/userPage?id=${person.id}&name=${encodeURIComponent(person.name)}&email=${encodeURIComponent(person.email)}&role=${encodeURIComponent(person.position)}&department=${encodeURIComponent(person.department)}&phone=${encodeURIComponent(person.phone)}&status=${person.status}`}
+                    className="block hover:bg-opacity-50 transition-all duration-200"
+                  >
+                    <div className="flex items-center">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        theme === "dark" 
+                          ? "bg-blue-900" 
+                          : "bg-blue-100"
+                      }`}>
+                        <span className={`font-semibold ${
+                          theme === "dark" 
+                            ? "text-blue-200" 
+                            : "text-blue-600"
+                        }`}>
+                          {person.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="ml-4">
+                        <div className={`font-medium ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>{person.name}</div>
+                        <div className={`text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}>{person.email}</div>
+                      </div>
                     </div>
-                    <div className="ml-4">
-                      <div className={`font-medium ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>{person.name}</div>
-                      <div className={`text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}>{person.email}</div>
-                    </div>
-                  </div>
+                  </Link>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">{person.position}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{person.department}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{person.phone}</td>
+
+                <td className={`px-6 py-4 whitespace-nowrap ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>{person.position}</td>
+                <td className={`px-6 py-4 whitespace-nowrap ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>{person.department}</td>
+                <td className={`px-6 py-4 whitespace-nowrap ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>{person.phone}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(person.status, theme)}`}>
                     {person.status === "active" ? "Aktif" : "Pasif"}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <button className={`text-blue-600 ${theme === "dark" ? "text-blue-400 hover:text-blue-300" : "hover:text-blue-900"} mr-3 text-xs font-medium`}>Düzenle</button>
-                  <button className={`text-red-600 ${theme === "dark" ? "text-red-400 hover:text-red-300" : "hover:text-red-900"} text-xs font-medium`}>Sil</button>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className={`mr-3 text-xs font-medium px-3 py-1 rounded-lg transition-colors ${theme === "dark" ? "bg-blue-900 text-blue-200 hover:bg-blue-800" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}
+                  >
+                    Düzenle
+                  </button>
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors ${theme === "dark" ? "bg-red-900 text-red-200 hover:bg-red-800" : "bg-red-100 text-red-700 hover:bg-red-200"}`}
+                  >
+                    Sil
+                  </button>
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </motion.div>
 
       {/* Add Personnel Modal */}
       {showAddForm && (

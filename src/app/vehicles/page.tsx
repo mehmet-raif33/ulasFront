@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 const VehiclesPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
@@ -83,13 +85,29 @@ const VehiclesPage: React.FC = () => {
     return (
         <div className={`flex-1 bg-gradient-to-br min-h-screen p-6 ${theme === 'dark' ? 'from-slate-900 to-blue-950' : 'from-slate-50 to-blue-50'}`}>
             {/* Header */}
-            <div className="mb-8">
+            <motion.div 
+                className="mb-8"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+            >
                 <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Araç Yönetimi</h1>
                 <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Araç bilgilerini görüntüleyin ve yönetin</p>
-            </div>
+            </motion.div>
+
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}> {/* Toplam Araç */}
+            <motion.div 
+                className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+            >
+                <motion.div 
+                    className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.4 }}
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <p className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Toplam Araç</p>
@@ -99,8 +117,14 @@ const VehiclesPage: React.FC = () => {
                             🚗
                         </div>
                     </div>
-                </div>
-                <div className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}> {/* Aktif Araçlar */}
+                </motion.div>
+
+                <motion.div 
+                    className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <p className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Aktif Araçlar</p>
@@ -110,8 +134,14 @@ const VehiclesPage: React.FC = () => {
                             ✅
                         </div>
                     </div>
-                </div>
-                <div className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}> {/* Bakımda */}
+                </motion.div>
+
+                <motion.div 
+                    className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.6 }}
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <p className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Bakımda</p>
@@ -121,8 +151,14 @@ const VehiclesPage: React.FC = () => {
                             🔧
                         </div>
                     </div>
-                </div>
-                <div className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}> {/* Ortalama Yaş */}
+                </motion.div>
+
+                <motion.div 
+                    className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.7 }}
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <p className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Ortalama Yaş</p>
@@ -132,10 +168,16 @@ const VehiclesPage: React.FC = () => {
                             📊
                         </div>
                     </div>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
+
             {/* Search and Add Button */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <motion.div 
+                className="flex flex-col sm:flex-row gap-4 mb-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.8 }}
+            >
                 <div className="flex-1">
                     <input
                         type="text"
@@ -152,48 +194,85 @@ const VehiclesPage: React.FC = () => {
                     <span>🚗</span>
                     <span>Yeni Araç</span>
                 </button>
-            </div>
+            </motion.div>
+
             {/* Vehicles Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredVehicles.map((vehicle) => (
-                    <div key={vehicle.id} className={`rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{vehicle.plate}</h3>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(vehicle.status)}`}>{getStatusText(vehicle.status)}</span>
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex items-center space-x-3">
-                                <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>🚙</span>
-                                <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.brand} {vehicle.model}</span>
+            <motion.div 
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 1.0 }}
+            >
+                {filteredVehicles.map((vehicle, index) => (
+                    <motion.div
+                        key={vehicle.id}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 1.2 + (index * 0.1) }}
+                    >
+                        <Link 
+                            href={`/vehicles/${vehicle.plate.replace(/\s+/g, '')}`}
+                            className={`block rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{vehicle.plate}</h3>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(vehicle.status)}`}>{getStatusText(vehicle.status)}</span>
                             </div>
-                            <div className="flex items-center space-x-3">
-                                <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>📅</span>
-                                <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.year}</span>
+                            <div className="space-y-3">
+                                <div className="flex items-center space-x-3">
+                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>🚙</span>
+                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.brand} {vehicle.model}</span>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>📅</span>
+                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.year}</span>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>⛽</span>
+                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.fuelType}</span>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>📦</span>
+                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.capacity}</span>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>👤</span>
+                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.driver}</span>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>🔧</span>
+                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Son Bakım: {new Date(vehicle.lastMaintenance).toLocaleDateString('tr-TR')}</span>
+                                </div>
                             </div>
-                            <div className="flex items-center space-x-3">
-                                <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>⛽</span>
-                                <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.fuelType}</span>
+                            <div className={`flex gap-2 mt-6 pt-4 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-gray-200'}`}>
+                                <button 
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        // Düzenle işlemi burada yapılacak
+                                    }}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200 ${theme === 'dark' ? 'bg-blue-900 text-blue-200 hover:bg-blue-800' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}
+                                >
+                                    Düzenle
+                                </button>
+                                <button 
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        // Sil işlemi burada yapılacak
+                                    }}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200 ${theme === 'dark' ? 'bg-red-900 text-red-200 hover:bg-red-800' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}
+                                >
+                                    Sil
+                                </button>
                             </div>
-                            <div className="flex items-center space-x-3">
-                                <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>📦</span>
-                                <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.capacity}</span>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                                <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>👤</span>
-                                <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.driver}</span>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                                <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>🔧</span>
-                                <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Son Bakım: {new Date(vehicle.lastMaintenance).toLocaleDateString('tr-TR')}</span>
-                            </div>
-                        </div>
-                        <div className={`flex gap-2 mt-6 pt-4 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-gray-200'}`}>
-                            <button className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200 ${theme === 'dark' ? 'bg-blue-900 text-blue-200 hover:bg-blue-800' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}>Düzenle</button>
-                            <button className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200 ${theme === 'dark' ? 'bg-red-900 text-red-200 hover:bg-red-800' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}>Sil</button>
-                        </div>
-                    </div>
+                        </Link>
+                    </motion.div>
                 ))}
-            </div>
+            </motion.div>
+
             {/* Add Vehicle Modal */}
             {showAddForm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

@@ -3,6 +3,7 @@ import './globals.css'
 import { useSelector } from 'react-redux';
 import { selectUser } from './redux/sliceses/authSlices';
 import { RootState } from './redux/store';
+import { motion } from 'framer-motion';
 
 export default function Home() {
   const user = useSelector(selectUser);
@@ -46,11 +47,16 @@ export default function Home() {
   return (
     <div className={`flex-1 bg-gradient-to-br min-h-screen p-6 ${theme === 'dark' ? 'from-slate-900 to-blue-950' : 'from-slate-50 to-blue-50'}`}>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="mb-6"
+      >
+        <h1 className={`text-4xl font-bold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
           Hoş Geldiniz, {user?.email || 'Kullanıcı'}!
         </h1>
-        <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+        <p className={`text-lg ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
           {new Date().toLocaleDateString('tr-TR', { 
             weekday: 'long', 
             year: 'numeric', 
@@ -58,12 +64,22 @@ export default function Home() {
             day: 'numeric' 
           })}
         </p>
-      </div>
+      </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((stat, index) => (
-          <div key={index} className={`rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
+          <motion.div 
+            key={index}
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ 
+              duration: 0.5, 
+              delay: 0.2 + (index * 0.1),
+              ease: "easeOut"
+            }}
+            className={`rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>{stat.title}</p>
@@ -74,19 +90,24 @@ export default function Home() {
                 {stat.icon}
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Recent Activities */}
-        <div className={`lg:col-span-2 rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Son Aktiviteler</h2>
-          <div className="space-y-4">
+        <motion.div 
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+          className={`lg:col-span-2 rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+        >
+          <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Son Aktiviteler</h2>
+          <div className="space-y-2">
             {recentActivities.map((activity, index) => (
-              <div key={index} className={`flex items-center space-x-4 p-3 rounded-lg transition-colors duration-200 ${theme === 'dark' ? 'hover:bg-slate-900' : 'hover:bg-gray-50'}`}>
-                <div className="text-2xl">{getActivityIcon(activity.type)}</div>
+              <div key={index} className={`flex items-center space-x-3 p-2 rounded-lg transition-colors duration-200 ${theme === 'dark' ? 'hover:bg-slate-900' : 'hover:bg-gray-50'}`}>
+                <div className="text-xl">{getActivityIcon(activity.type)}</div>
                 <div className="flex-1">
                   <p className={`font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{activity.action}</p>
                   <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>{activity.time}</p>
@@ -94,38 +115,45 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Quick Actions */}
-        <div className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Hızlı İşlemler</h2>
-          <div className="space-y-3">
-            <button className={`w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'}`}>
+        <motion.div 
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 1.0 }}
+          className={`rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+        >
+          <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Hızlı İşlemler</h2>
+          <div className="space-y-2">
+            <button className={`w-full bg-blue-600 text-white py-2 px-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'}`}>
               <span>🚗</span>
               <span>Araç Ekle</span>
             </button>
-            <button className={`w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-green-800' : 'hover:bg-green-700'}`}>
+            <button className={`w-full bg-green-600 text-white py-2 px-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-green-800' : 'hover:bg-green-700'}`}>
               <span>👤</span>
               <span>Personel Ekle</span>
             </button>
-            <button className={`w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-purple-800' : 'hover:bg-purple-700'}`}>
+            <button className={`w-full bg-purple-600 text-white py-2 px-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-purple-800' : 'hover:bg-purple-700'}`}>
               <span>📋</span>
               <span>İşlem Ekle</span>
             </button>
-            <button className={`w-full bg-orange-600 text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-orange-800' : 'hover:bg-orange-700'}`}>
+            <button className={`w-full bg-orange-600 text-white py-2 px-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-orange-800' : 'hover:bg-orange-700'}`}>
               <span>📊</span>
               <span>Rapor Görüntüle</span>
             </button>
           </div>
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* System Status */}
-        <div className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Sistem Durumu</h2>
-          <div className="space-y-3">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 1.2 }}
+          className={`rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+        >
+          <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Sistem Durumu</h2>
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Veritabanı</span>
               <span className={`font-medium ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>✓ Aktif</span>
@@ -139,12 +167,20 @@ export default function Home() {
               <span className={`font-medium ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>✓ Güvenli</span>
             </div>
           </div>
-        </div>
+        </motion.div>
+      </div>
 
+      {/* Bottom Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 1.4 }}
+        className="mt-6"
+      >
         {/* User Info */}
-        <div className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Kullanıcı Bilgileri</h2>
-          <div className="space-y-3">
+        <div className={`rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}>
+          <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Kullanıcı Bilgileri</h2>
+          <div className="space-y-2">
             <div className="flex items-center space-x-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${theme === 'dark' ? 'bg-blue-900' : 'bg-blue-100'}`}>
                 <span className={`font-semibold ${theme === 'dark' ? 'text-blue-200' : 'text-blue-600'}`}>
@@ -163,7 +199,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

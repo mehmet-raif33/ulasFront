@@ -32,7 +32,7 @@ export default function RootLayout({
           <ThemeEffect />
           <NavbarCom />
           <ThemeFAB />
-          <main className="flex-1 lg:ml-[16.666667%] lg:pt-0 pt-8 pb-14 lg:pb-0 min-h-screen">
+          <main className="flex-1 lg:ml-64 lg:pt-0 pt-14 pb-14 lg:pb-0 min-h-screen">
             {children}
           </main>
         </ReduxProvider>
