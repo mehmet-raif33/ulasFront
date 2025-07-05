@@ -66,10 +66,17 @@ export const authUtils = {
   // Google ile giriş
   async signInWithGoogle() {
     try {
+      // Dinamik redirect URL - environment'a göre otomatik ayarlanır
+      const redirectUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/callback`
+        : process.env.NEXT_PUBLIC_SITE_URL 
+          ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+          : 'http://localhost:3000/auth/callback'
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: redirectUrl
         }
       })
 
@@ -164,8 +171,15 @@ export const authUtils = {
   // Şifre sıfırlama
   async resetPassword(email: string) {
     try {
+      // Dinamik redirect URL
+      const redirectUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/reset-password`
+        : process.env.NEXT_PUBLIC_SITE_URL 
+          ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`
+          : 'http://localhost:3000/auth/reset-password'
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: redirectUrl,
       })
 
       if (error) throw error
