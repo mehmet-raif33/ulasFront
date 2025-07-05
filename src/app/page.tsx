@@ -5,6 +5,7 @@ import { selectUser } from './redux/sliceses/authSlices';
 import { RootState } from './redux/store';
 import { motion } from 'framer-motion';
 
+
 export default function Home() {
   const user = useSelector(selectUser);
   const theme = useSelector((state: RootState) => state.theme.theme);
@@ -50,7 +51,7 @@ export default function Home() {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.3 }}
         className="mb-6"
       >
         <h1 className={`text-4xl font-bold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
@@ -74,8 +75,8 @@ export default function Home() {
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ 
-              duration: 0.5, 
-              delay: 0.2 + (index * 0.1),
+              duration: 0.25, 
+              delay: 0.1 + (index * 0.05),
               ease: "easeOut"
             }}
             className={`rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-105 transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
@@ -100,7 +101,7 @@ export default function Home() {
         <motion.div 
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
+          transition={{ duration: 0.3, delay: 0.4 }}
           className={`lg:col-span-2 rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
         >
           <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Son Aktiviteler</h2>
@@ -121,7 +122,7 @@ export default function Home() {
         <motion.div 
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 1.0 }}
+          transition={{ duration: 0.3, delay: 0.5 }}
           className={`rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
         >
           <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Hızlı İşlemler</h2>
@@ -149,7 +150,7 @@ export default function Home() {
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 1.2 }}
+          transition={{ duration: 0.3, delay: 0.6 }}
           className={`rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
         >
           <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Sistem Durumu</h2>
@@ -170,11 +171,13 @@ export default function Home() {
         </motion.div>
       </div>
 
+
+
       {/* Bottom Section */}
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 1.4 }}
+        transition={{ duration: 0.3, delay: 0.8 }}
         className="mt-6"
       >
         {/* User Info */}

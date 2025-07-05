@@ -1,11 +1,12 @@
 'use client'
-import React from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import Link from "next/link";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../redux/store";
 import { toggleTheme } from "../redux/sliceses/themeSlice";
+import { logout } from "../redux/sliceses/authSlices";
+import { authUtils } from "../lib/auth-utils";
 
 const NavbarList = [
     { name: "Gösterge Paneli", href: "/", icon: "📊" },
@@ -14,82 +15,139 @@ const NavbarList = [
     { name: "Personeller", href: "/personnel", icon: "👥" }
 ]
 
-const NavbarCom: React.FC = () => {
+interface NavbarComProps {
+    isOpen: boolean;
+    setIsOpen: Dispatch<SetStateAction<boolean>>;
+}
+
+const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
     const router = useRouter();
-    const [isOpen, setIsOpen] = useState(true);
     const theme = useSelector((state: RootState) => state.theme.theme);
+    const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
     const dispatch = useDispatch();
 
-    const loggedIn = () => {
-        setIsOpen(!isOpen);
-        router.push('/');
-    }
+    const toggleSidebar = () => setIsOpen((prev) => !prev);
 
-    const loggedOut = () => {
+    const loggedIn = () => {
         router.push('/auth');
         setIsOpen(false);
+    }
+
+    const loggedOut = async () => {
+        try {
+            await authUtils.signOut();
+            dispatch(logout()); // Redux state'i temizle
+            router.push('/auth');
+            setIsOpen(false);
+        } catch (error) {
+            console.error('Çıkış hatası:', error);
+            // Hata olsa bile Redux state'i temizle
+            dispatch(logout());
+            router.push('/auth');
+        }
     }
 
     return (
         <>
             {/* Desktop Sidebar */}
             <nav
-                className={`hidden lg:flex shadow-lg p-4 w-64 max-w-xs min-w-[200px] h-screen flex-col items-center justify-between fixed left-0 top-0 z-50 overflow-y-auto border-r ${
-                    theme === 'dark'
-                        ? 'bg-gradient-to-b from-slate-900 to-slate-800 border-slate-700'
-                        : 'bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200'
-                }`}
+                className={`hidden lg:flex shadow-lg h-screen fixed left-0 top-0 z-50 overflow-y-auto border-r transition-all duration-300
+                    ${isOpen ? 'w-64 max-w-xs min-w-[200px] p-4 flex flex-col items-center justify-between' : 'w-[72px] px-0 py-2 flex flex-col items-center justify-between'}
+                    ${theme === 'dark' ? 'bg-gradient-to-b from-slate-900 to-slate-800 border-slate-700' : 'bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200'}
+                `}
             >
                 <div className="w-full flex flex-col justify-between h-full">
                     <div>
-                        <div className="text-center mb-6">
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                Ulas Tech
-                            </h1>
+                        {/* Toggle Button */}
+                        <div className="flex items-center justify-between mb-4 px-2">
+                            <button
+                                onClick={toggleSidebar}
+                                className={`rounded-lg text-lg font-medium transition-colors duration-200 shadow-sm border flex items-center justify-center
+                                    ${theme === 'dark'
+                                        ? 'text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700 hover:text-blue-300 hover:border-blue-400'
+                                        : 'text-slate-700 bg-white border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'}
+                                    ${isOpen ? 'p-2 h-10' : 'h-12 w-12 p-0 mx-auto'}
+                                `}
+                                aria-label={isOpen ? 'Menüyü Daralt' : 'Menüyü Aç'}
+                            >
+                                {isOpen ? <span className="text-lg">«</span> : <span className="text-xl">»</span>}
+                            </button>
+                            {isOpen && (
+                                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                    Ulas Tech
+                                </h1>
+                            )}
                         </div>
-                        {isOpen ? (
-                            <div className="flex flex-col space-y-2 w-full">
-                                {NavbarList.map((item, index) => (
-                                    <Link
-                                        href={item.href}
-                                        className={`text-sm font-medium rounded-lg border flex items-center justify-center group p-2 transition-all duration-300
-                                            ${theme === 'dark'
-                                                ? 'text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700 hover:text-blue-300 hover:border-blue-400'
-                                                : 'text-slate-700 bg-white border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'}
-                                        `}
-                                        key={index}
-                                    >
+                        <div className="flex flex-col space-y-2 w-full px-2">
+                            {NavbarList.map((item, index) => (
+                                <Link
+                                    href={item.href}
+                                    className={`text-sm font-medium rounded-lg border flex items-center group transition-all duration-300
+                                        ${theme === 'dark'
+                                            ? 'text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700 hover:text-blue-300 hover:border-blue-400'
+                                            : 'text-slate-700 bg-white border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'}
+                                        ${isOpen ? 'p-2 justify-start w-full' : 'h-12 w-12 justify-center items-center p-0 mx-auto'}
+                                    `}
+                                    key={index}
+                                >
+                                    <span className={`text-xl${isOpen ? ' mr-2' : ''}`}>{item.icon}</span>
+                                    {isOpen && (
                                         <span className="group-hover:scale-105 transition-transform duration-200">
                                             {item.name}
                                         </span>
-                                    </Link>
-                                ))}
-                              
-                                <button
-                                    onClick={loggedOut}
-                                    className={`text-sm font-semibold rounded-lg border p-2 flex items-center justify-center transition-all duration-300
-                                        ${theme === 'dark'
-                                            ? 'text-white bg-gradient-to-r from-red-700 to-red-800 border-red-700 hover:from-red-800 hover:to-red-900 hover:border-red-800 hover:shadow-lg'
-                                            : 'text-white bg-gradient-to-r from-red-500 to-red-600 border-red-400 hover:from-red-600 hover:to-red-700 hover:border-red-500 hover:shadow-lg'}
-                                        transform hover:scale-105 active:scale-95`}
-                                >
-                                    Çıkış Yap
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col space-y-2 w-full">
-                                <button
-                                    onClick={loggedIn}
-                                    className={`text-sm font-semibold rounded-lg border p-2 flex items-center justify-center transition-all duration-300
-                                        ${theme === 'dark'
-                                            ? 'text-white bg-gradient-to-r from-green-700 to-green-800 border-green-700 hover:from-green-800 hover:to-green-900 hover:border-green-800 hover:shadow-lg'
-                                            : 'text-white bg-gradient-to-r from-green-500 to-green-600 border-green-400 hover:from-green-600 hover:to-green-700 hover:border-green-500 hover:shadow-lg'}
-                                        transform hover:scale-105 active:scale-95`}
-                                >
-                                    Giriş Yap
-                                </button>
-                            </div>
-                        )}
+                                    )}
+                                </Link>
+                            ))}
+                            {isLoggedIn ? (
+                                isOpen ? (
+                                    <button
+                                        onClick={loggedOut}
+                                        className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                            ${theme === 'dark'
+                                                ? 'text-white bg-gradient-to-r from-red-700 to-red-800 border-red-700 hover:from-red-800 hover:to-red-900 hover:border-red-800 hover:shadow-lg'
+                                                : 'text-white bg-gradient-to-r from-red-500 to-red-600 border-red-400 hover:from-red-600 hover:to-red-700 hover:border-red-500 hover:shadow-lg'}
+                                            transform hover:scale-105 active:scale-95 w-full p-2`}
+                                    >
+                                        Çıkış Yap
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={loggedOut}
+                                        className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                            ${theme === 'dark'
+                                                ? 'text-white bg-gradient-to-r from-red-700 to-red-800 border-red-700 hover:from-red-800 hover:to-red-900 hover:border-red-800 hover:shadow-lg'
+                                                : 'text-white bg-gradient-to-r from-green-500 to-green-600 border-green-400 hover:from-green-600 hover:to-green-700 hover:border-green-500 hover:shadow-lg'}
+                                            transform hover:scale-105 active:scale-95 h-12 w-12 p-0 mx-auto`}
+                                    >
+                                        <span className="text-xl">🚪</span>
+                                    </button>
+                                )
+                            ) : (
+                                isOpen ? (
+                                    <button
+                                        onClick={loggedIn}
+                                        className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                            ${theme === 'dark'
+                                                ? 'text-white bg-gradient-to-r from-green-700 to-green-800 border-green-700 hover:from-green-800 hover:to-green-900 hover:border-green-800 hover:shadow-lg'
+                                                : 'text-white bg-gradient-to-r from-green-500 to-green-600 border-green-400 hover:from-green-600 hover:to-green-700 hover:border-green-500 hover:shadow-lg'}
+                                            transform hover:scale-105 active:scale-95 w-full p-2`}
+                                    >
+                                        Giriş Yap
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={loggedIn}
+                                        className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                            ${theme === 'dark'
+                                                ? 'text-white bg-gradient-to-r from-green-700 to-green-800 border-green-700 hover:from-green-800 hover:to-green-900 hover:border-green-800 hover:shadow-lg'
+                                                : 'text-white bg-gradient-to-r from-green-500 to-green-600 border-green-400 hover:from-green-600 hover:to-green-700 hover:border-green-500 hover:shadow-lg'}
+                                            transform hover:scale-105 active:scale-95 h-12 w-12 p-0 mx-auto`}
+                                    >
+                                        <span className="text-xl">🔓</span>
+                                    </button>
+                                )
+                            )}
+                        </div>
                     </div>
                 </div>
             </nav>
@@ -107,13 +165,23 @@ const NavbarCom: React.FC = () => {
                             <span className={`font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{item.name}</span>
                         </Link>
                     ))}
-                    <button
-                        onClick={loggedOut}
-                        className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-200 text-xs ${theme === 'dark' ? 'hover:bg-red-900 active:bg-red-800 text-red-300' : 'hover:bg-red-50 active:bg-red-100 text-red-600'}`}
-                    >
-                        <span className="text-xl mb-0.5">🚪</span>
-                        <span className={`font-medium ${theme === 'dark' ? 'text-red-300' : 'text-red-600'}`}>Çıkış</span>
-                    </button>
+                    {isLoggedIn ? (
+                        <button
+                            onClick={loggedOut}
+                            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-200 text-xs ${theme === 'dark' ? 'hover:bg-red-900 active:bg-red-800 text-red-300' : 'hover:bg-red-50 active:bg-red-100 text-red-600'}`}
+                        >
+                            <span className="text-xl mb-0.5">🚪</span>
+                            <span className={`font-medium ${theme === 'dark' ? 'text-red-300' : 'text-red-600'}`}>Çıkış</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={loggedIn}
+                            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-200 text-xs ${theme === 'dark' ? 'hover:bg-green-900 active:bg-green-800 text-green-300' : 'hover:bg-green-50 active:bg-green-100 text-green-600'}`}
+                        >
+                            <span className="text-xl mb-0.5">🔓</span>
+                            <span className={`font-medium ${theme === 'dark' ? 'text-green-300' : 'text-green-600'}`}>Giriş</span>
+                        </button>
+                    )}
                 </div>
             </nav>
 

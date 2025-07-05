@@ -1,34 +1,26 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { vehicleUtils } from '../lib/supabase-utils';
 
 const VehiclesPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
     const [showAddForm, setShowAddForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [vehicles, setVehicles] = useState<any[]>([]);
     const [formData, setFormData] = useState({
         plate: '',
         brand: '',
         model: '',
         year: '',
-        fuelType: 'gasoline',
-        capacity: '',
-        driver: '',
-        status: 'active',
-        lastMaintenance: new Date().toISOString().split('T')[0]
+        fuel_type: 'dizel',
+        status: 'active'
     });
-
-    // Mock vehicles data
-    const vehicles = [
-        { id: 1, plate: '34 ABC 123', brand: 'Mercedes', model: 'Sprinter', year: '2020', fuelType: 'Dizel', capacity: '3.5 Ton', driver: 'Ahmet Yılmaz', status: 'active', lastMaintenance: '2024-01-15' },
-        { id: 2, plate: '06 XYZ 789', brand: 'Ford', model: 'Transit', year: '2021', fuelType: 'Dizel', capacity: '2.5 Ton', driver: 'Mehmet Demir', status: 'active', lastMaintenance: '2024-02-20' },
-        { id: 3, plate: '35 DEF 456', brand: 'Volkswagen', model: 'Crafter', year: '2019', fuelType: 'Dizel', capacity: '4.0 Ton', driver: 'Ali Çelik', status: 'maintenance', lastMaintenance: '2024-03-10' },
-        { id: 4, plate: '16 GHI 789', brand: 'Iveco', model: 'Daily', year: '2022', fuelType: 'Dizel', capacity: '3.0 Ton', driver: 'Ayşe Kaya', status: 'active', lastMaintenance: '2024-01-30' },
-        { id: 5, plate: '42 JKL 012', brand: 'Fiat', model: 'Ducato', year: '2021', fuelType: 'Dizel', capacity: '2.8 Ton', driver: 'Fatma Özkan', status: 'inactive', lastMaintenance: '2023-12-15' }
-    ];
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({
@@ -37,28 +29,90 @@ const VehiclesPage: React.FC = () => {
         });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Load vehicles on component mount
+    useEffect(() => {
+        const loadVehicles = async () => {
+            try {
+                const vehiclesData = await vehicleUtils.getAllVehicles();
+                setVehicles(vehiclesData || []);
+            } catch (error) {
+                console.error('Error loading vehicles:', error);
+                setError('Araçlar yüklenirken hata oluştu');
+            }
+        };
+        loadVehicles();
+    }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        alert('Araç başarıyla eklendi!');
-        setShowAddForm(false);
-        setFormData({
-            plate: '',
-            brand: '',
-            model: '',
-            year: '',
-            fuelType: 'gasoline',
-            capacity: '',
-            driver: '',
-            status: 'active',
-            lastMaintenance: new Date().toISOString().split('T')[0]
-        });
+        console.log('Form submitted, starting...');
+        setLoading(true);
+        setError(null);
+
+        try {
+            // Form validasyonu
+            if (!formData.plate.trim()) {
+                setError('Plaka alanı zorunludur');
+                return;
+            }
+            
+            if (!formData.brand.trim()) {
+                setError('Marka alanı zorunludur');
+                return;
+            }
+            
+            if (!formData.model.trim()) {
+                setError('Model alanı zorunludur');
+                return;
+            }
+            
+            if (!formData.year || parseInt(formData.year) < 1900 || parseInt(formData.year) > new Date().getFullYear() + 1) {
+                setError('Geçerli bir yıl giriniz');
+                return;
+            }
+
+            const vehicleData = {
+                plate: formData.plate.trim().toUpperCase(),
+                brand: formData.brand.trim(),
+                model: formData.model.trim(),
+                year: parseInt(formData.year),
+                fuel_type: formData.fuel_type,
+                status: formData.status as 'active' | 'inactive' | 'maintenance'
+            };
+
+            console.log('Sending vehicle data:', vehicleData);
+            const result = await vehicleUtils.createVehicle(vehicleData);
+            console.log('Vehicle created successfully:', result);
+            alert('Araç başarıyla eklendi!');
+            setShowAddForm(false);
+            setError(null);
+            setLoading(false);
+            
+            // Reload vehicles
+            const vehiclesData = await vehicleUtils.getAllVehicles();
+            setVehicles(vehiclesData || []);
+            
+            setFormData({
+                plate: '',
+                brand: '',
+                model: '',
+                year: '',
+                fuel_type: 'dizel',
+                status: 'active'
+            });
+        } catch (error: any) {
+            console.error('Error creating vehicle:', error);
+            setError(`Araç eklenirken hata oluştu: ${error.message || error.details || 'Bilinmeyen hata'}`);
+            setLoading(false);
+        } finally {
+            console.log('Form submission completed');
+        }
     };
 
     const filteredVehicles = vehicles.filter(vehicle =>
         vehicle.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
         vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.driver.toLowerCase().includes(searchTerm.toLowerCase())
+        vehicle.model.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const getStatusColor = (status: string) => {
@@ -89,24 +143,26 @@ const VehiclesPage: React.FC = () => {
                 className="mb-8"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.3 }}
             >
                 <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Araç Yönetimi</h1>
                 <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Araç bilgilerini görüntüleyin ve yönetin</p>
             </motion.div>
+
+
 
             {/* Stats Cards */}
             <motion.div 
                 className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
             >
                 <motion.div 
                     className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.4 }}
+                    transition={{ duration: 0.25, delay: 0.2 }}
                 >
                     <div className="flex items-center justify-between">
                         <div>
@@ -123,7 +179,7 @@ const VehiclesPage: React.FC = () => {
                     className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
+                    transition={{ duration: 0.25, delay: 0.25 }}
                 >
                     <div className="flex items-center justify-between">
                         <div>
@@ -140,7 +196,7 @@ const VehiclesPage: React.FC = () => {
                     className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
+                    transition={{ duration: 0.25, delay: 0.3 }}
                 >
                     <div className="flex items-center justify-between">
                         <div>
@@ -157,7 +213,7 @@ const VehiclesPage: React.FC = () => {
                     className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.7 }}
+                    transition={{ duration: 0.25, delay: 0.35 }}
                 >
                     <div className="flex items-center justify-between">
                         <div>
@@ -176,7 +232,7 @@ const VehiclesPage: React.FC = () => {
                 className="flex flex-col sm:flex-row gap-4 mb-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.8 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
             >
                 <div className="flex-1">
                     <input
@@ -201,14 +257,14 @@ const VehiclesPage: React.FC = () => {
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 1.0 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
             >
                 {filteredVehicles.map((vehicle, index) => (
                     <motion.div
                         key={vehicle.id}
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 1.2 + (index * 0.1) }}
+                        transition={{ duration: 0.25, delay: 0.6 + (index * 0.05) }}
                     >
                         <Link 
                             href={`/vehicles/${vehicle.plate.replace(/\s+/g, '')}`}
@@ -229,20 +285,9 @@ const VehiclesPage: React.FC = () => {
                                 </div>
                                 <div className="flex items-center space-x-3">
                                     <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>⛽</span>
-                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.fuelType}</span>
+                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.fuel_type}</span>
                                 </div>
-                                <div className="flex items-center space-x-3">
-                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>📦</span>
-                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.capacity}</span>
-                                </div>
-                                <div className="flex items-center space-x-3">
-                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>👤</span>
-                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.driver}</span>
-                                </div>
-                                <div className="flex items-center space-x-3">
-                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>🔧</span>
-                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Son Bakım: {new Date(vehicle.lastMaintenance).toLocaleDateString('tr-TR')}</span>
-                                </div>
+
                             </div>
                             <div className={`flex gap-2 mt-6 pt-4 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-gray-200'}`}>
                                 <button 
@@ -278,6 +323,13 @@ const VehiclesPage: React.FC = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <div className={`rounded-xl shadow-lg max-w-md w-full p-6 ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}> 
                         <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Yeni Araç Ekle</h2>
+                        
+                        {error && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                                {error}
+                            </div>
+                        )}
+                        
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Plaka *</label>
@@ -288,6 +340,7 @@ const VehiclesPage: React.FC = () => {
                                     onChange={handleInputChange}
                                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
                                     placeholder="34 ABC 123"
+                                    maxLength={20}
                                     required
                                 />
                             </div>
@@ -315,61 +368,37 @@ const VehiclesPage: React.FC = () => {
                                     />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Yıl *</label>
-                                    <input
-                                        type="number"
-                                        name="year"
-                                        value={formData.year}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                                        min="1990"
-                                        max="2024"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Kapasite</label>
-                                    <input
-                                        type="text"
-                                        name="capacity"
-                                        value={formData.capacity}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                                        placeholder="3.5 Ton"
-                                    />
-                                </div>
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Yıl *</label>
+                                <input
+                                    type="number"
+                                    name="year"
+                                    value={formData.year}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
+                                    min="1900"
+                                    max={new Date().getFullYear() + 1}
+                                    placeholder="2020"
+                                    required
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Yakıt Türü</label>
                                     <select
-                                        name="fuelType"
-                                        value={formData.fuelType}
+                                        name="fuel_type"
+                                        value={formData.fuel_type}
                                         onChange={handleInputChange}
                                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                                         required
                                     >
-                                        <option value="gasoline">Benzin</option>
-                                        <option value="diesel">Dizel</option>
-                                        <option value="electric">Elektrik</option>
-                                        <option value="hybrid">Hibrit</option>
+                                        <option value="benzin">Benzin</option>
+                                        <option value="dizel">Dizel</option>
+                                        <option value="elektrik">Elektrik</option>
+                                        <option value="hibrit">Hibrit</option>
+                                        <option value="lpg">LPG</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Sürücü</label>
-                                    <input
-                                        type="text"
-                                        name="driver"
-                                        value={formData.driver}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                                        placeholder="Sürücü adı"
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Durum</label>
                                     <select
@@ -384,21 +413,15 @@ const VehiclesPage: React.FC = () => {
                                         <option value="inactive">Pasif</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Son Bakım</label>
-                                    <input
-                                        type="date"
-                                        name="lastMaintenance"
-                                        value={formData.lastMaintenance}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
-                                        required
-                                    />
-                                </div>
                             </div>
+
                             <div className="flex gap-3 pt-4">
-                                <button type="submit" className={`flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'} transition-colors duration-200`}>
-                                    Ekle
+                                <button 
+                                    type="submit" 
+                                    disabled={loading}
+                                    className={`flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'} transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    {loading ? 'Ekleniyor...' : 'Ekle'}
                                 </button>
                                 <button type="button" onClick={() => setShowAddForm(false)} className={`flex-1 bg-gray-500 text-white py-3 px-4 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-700'} transition-colors duration-200`}>
                                     İptal

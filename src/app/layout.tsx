@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css"; 
-import NavbarCom from "./components/NavbarCom";
 import ReduxProvider from "./components/ReduxProvider";
 import ThemeEffect, { ThemeFAB } from "./components/ThemeEffect";
+import ClientLayout from "./components/ClientLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,11 +30,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} flex`}>
         <ReduxProvider>
           <ThemeEffect />
-          <NavbarCom />
-          <ThemeFAB />
-          <main className="flex-1 lg:ml-64 lg:pt-0 pt-14 pb-14 lg:pb-0 min-h-screen">
-            {children}
-          </main>
+          <ClientLayout>{children}</ClientLayout>
         </ReduxProvider>
       </body>
     </html>

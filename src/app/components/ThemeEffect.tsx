@@ -43,40 +43,18 @@ export function ThemeFAB() {
   // Initialize position after mounting
   useEffect(() => {
     if (mounted) {
-      let initialPosition = { x: 24, y: 48 };
-      
-      // Check localStorage first
-      const saved = localStorage.getItem("theme-fab-pos");
-      if (saved) {
-        try {
-          const pos = JSON.parse(saved);
-          if (typeof pos.x === "number" && typeof pos.y === "number") {
-            initialPosition = pos;
-          }
-        } catch {}
-      } else {
-        // Set default position based on screen size
-        if (window.innerWidth >= 1024) {
-          // Desktop: top left
-          initialPosition = { x: 24, y: 48 };
-        } else {
-          // Mobile/tablet: bottom right
-          initialPosition = { x: window.innerWidth - 80, y: window.innerHeight - 120 };
-        }
-      }
-      
+      // Always set to top right position
+      const initialPosition = { x: window.innerWidth - 80, y: 24 };
       setPosition(initialPosition);
+      
+      // Clear any saved position from localStorage
+      localStorage.removeItem("theme-fab-pos");
     }
   }, [mounted]);
 
 
 
-  // Save position to localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("theme-fab-pos", JSON.stringify(position));
-    }
-  }, [position]);
+
 
   // Drag logic
   function onMouseDown(e: React.MouseEvent) {

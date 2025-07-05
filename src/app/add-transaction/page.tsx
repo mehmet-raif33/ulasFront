@@ -1,19 +1,25 @@
 "use client"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { motion } from 'framer-motion';
+import { vehicleUtils, personnelUtils, transactionUtils } from '../lib/supabase-utils';
+import { useRouter } from 'next/navigation';
 
 const AddTransactionPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
+    const router = useRouter();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [vehicles, setVehicles] = useState<any[]>([]);
+    const [personnel, setPersonnel] = useState<any[]>([]);
     const [formData, setFormData] = useState({
-        vehiclePlate: '',
-        driverName: '',
-        transactionType: 'pickup',
+        vehicle_id: '',
+        personnel_id: '',
+        transaction_type: 'fuel',
         description: '',
         amount: '',
-        date: new Date().toISOString().split('T')[0],
-        status: 'pending'
+        date: new Date().toISOString().split('T')[0]
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -23,11 +29,46 @@ const AddTransactionPage: React.FC = () => {
         });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Load vehicles and personnel on component mount
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                const [vehiclesData, personnelData] = await Promise.all([
+                    vehicleUtils.getAllVehicles(),
+                    personnelUtils.getAllPersonnel()
+                ]);
+                setVehicles(vehiclesData || []);
+                setPersonnel(personnelData || []);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                setError('Veriler yüklenirken hata oluştu');
+            }
+        };
+        loadData();
+    }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Transaction data:', formData);
-        // Here you would typically send the data to your API
-        alert('İşlem başarıyla eklendi!');
+        setLoading(true);
+        setError(null);
+
+        try {
+            const transactionData = {
+                ...formData,
+                amount: formData.amount ? parseFloat(formData.amount) : 0,
+                date: new Date(formData.date).toISOString(),
+                transaction_type: formData.transaction_type as 'fuel' | 'maintenance' | 'repair' | 'toll' | 'parking' | 'other'
+            };
+
+            await transactionUtils.createTransaction(transactionData);
+            alert('İşlem başarıyla eklendi!');
+            router.push('/vehicles');
+        } catch (error: any) {
+            console.error('Error creating transaction:', error);
+            setError(`İşlem eklenirken hata oluştu: ${error.message || error.details || 'Bilinmeyen hata'}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -59,52 +100,70 @@ const AddTransactionPage: React.FC = () => {
                         transition={{ duration: 0.6, delay: 0.4 }}
                     > 
                         <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Yeni İşlem Formu</h2>
+                        
+                        {error && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                                {error}
+                            </div>
+                        )}
+                        
                         <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Vehicle and Driver Section */}
+                        {/* Vehicle and Personnel Section */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label htmlFor="vehiclePlate" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Araç Plakası *</label>
-                                <input
-                                    type="text"
-                                    id="vehiclePlate"
-                                    name="vehiclePlate"
-                                    value={formData.vehiclePlate}
+                                <label htmlFor="vehicle_id" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Araç *</label>
+                                <select
+                                    id="vehicle_id"
+                                    name="vehicle_id"
+                                    value={formData.vehicle_id}
                                     onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                                    placeholder="34 ABC 123"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                                     required
-                                />
+                                >
+                                    <option value="">Araç seçin</option>
+                                    {vehicles.map((vehicle) => (
+                                        <option key={vehicle.id} value={vehicle.id}>
+                                            {vehicle.plate} - {vehicle.brand} {vehicle.model}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div>
-                                <label htmlFor="driverName" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Sürücü Adı *</label>
-                                <input
-                                    type="text"
-                                    id="driverName"
-                                    name="driverName"
-                                    value={formData.driverName}
+                                <label htmlFor="personnel_id" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Personel *</label>
+                                <select
+                                    id="personnel_id"
+                                    name="personnel_id"
+                                    value={formData.personnel_id}
                                     onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                                    placeholder="Ahmet Yılmaz"
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                                     required
-                                />
+                                >
+                                    <option value="">Personel seçin</option>
+                                    {personnel.map((person) => (
+                                        <option key={person.id} value={person.id}>
+                                            {person.name} - {person.position}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                         {/* Transaction Type and Amount */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label htmlFor="transactionType" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>İşlem Türü *</label>
+                                <label htmlFor="transaction_type" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>İşlem Türü *</label>
                                 <select
-                                    id="transactionType"
-                                    name="transactionType"
-                                    value={formData.transactionType}
+                                    id="transaction_type"
+                                    name="transaction_type"
+                                    value={formData.transaction_type}
                                     onChange={handleInputChange}
                                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
                                     required
                                 >
-                                    <option value="pickup">Teslim Alma</option>
-                                    <option value="delivery">Teslim Etme</option>
-                                    <option value="maintenance">Bakım</option>
                                     <option value="fuel">Yakıt</option>
+                                    <option value="maintenance">Bakım</option>
+                                    <option value="repair">Onarım</option>
+                                    <option value="toll">Otoyol Ücreti</option>
+                                    <option value="parking">Otopark</option>
                                     <option value="other">Diğer</option>
                                 </select>
                             </div>
@@ -122,36 +181,18 @@ const AddTransactionPage: React.FC = () => {
                                 />
                             </div>
                         </div>
-                        {/* Date and Status */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label htmlFor="date" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Tarih *</label>
-                                <input
-                                    type="date"
-                                    id="date"
-                                    name="date"
-                                    value={formData.date}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="status" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Durum *</label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
-                                    required
-                                >
-                                    <option value="pending">Beklemede</option>
-                                    <option value="in-progress">Devam Ediyor</option>
-                                    <option value="completed">Tamamlandı</option>
-                                    <option value="cancelled">İptal Edildi</option>
-                                </select>
-                            </div>
+                        {/* Date */}
+                        <div>
+                            <label htmlFor="date" className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Tarih *</label>
+                            <input
+                                type="date"
+                                id="date"
+                                name="date"
+                                value={formData.date}
+                                onChange={handleInputChange}
+                                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
+                                required
+                            />
                         </div>
                         {/* Description */}
                         <div>
@@ -170,22 +211,22 @@ const AddTransactionPage: React.FC = () => {
                         <div className="flex justify-center gap-4 pt-6 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-gray-200'}">
                             <button
                                 type="submit"
-                                className={`bg-blue-600 text-white py-4 px-8 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'} focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-3 min-w-[120px]`}
+                                disabled={loading}
+                                className={`bg-blue-600 text-white py-4 px-8 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'} focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-3 min-w-[120px] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                <span>📋</span>
-                                <span>Ekle</span>
+                                <span>{loading ? '⏳' : '📋'}</span>
+                                <span>{loading ? 'Ekleniyor...' : 'Ekle'}</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => {
                                     setFormData({
-                                        vehiclePlate: '',
-                                        driverName: '',
-                                        transactionType: 'pickup',
+                                        vehicle_id: '',
+                                        personnel_id: '',
+                                        transaction_type: 'fuel',
                                         description: '',
                                         amount: '',
-                                        date: new Date().toISOString().split('T')[0],
-                                        status: 'pending'
+                                        date: new Date().toISOString().split('T')[0]
                                     });
                                 }}
                                 className={`bg-gray-500 text-white py-4 px-8 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-700'} focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-3 min-w-[120px]`}

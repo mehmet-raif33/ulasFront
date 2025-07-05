@@ -1,9 +1,10 @@
 "use client"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import Link from "next/link";
 import { motion } from 'framer-motion';
+import { personnelUtils } from '../lib/supabase-utils';
 
 // Define Personnel type
 interface Personnel {
@@ -17,31 +18,23 @@ interface Personnel {
   hireDate: string;
 }
 
-const mockPersonnel: Personnel[] = [
-  { id: 1, name: "Ahmet Yılmaz", email: "ahmet@ulas.com", phone: "0532 123 4567", position: "Sürücü", department: "Lojistik", status: "active", hireDate: "2023-01-15" },
-  { id: 2, name: "Mehmet Demir", email: "mehmet@ulas.com", phone: "0533 234 5678", position: "Sürücü", department: "Lojistik", status: "active", hireDate: "2023-03-20" },
-  { id: 3, name: "Ayşe Kaya", email: "ayse@ulas.com", phone: "0534 345 6789", position: "Operatör", department: "Operasyon", status: "active", hireDate: "2023-02-10" },
-  { id: 4, name: "Fatma Özkan", email: "fatma@ulas.com", phone: "0535 456 7890", position: "Yönetici", department: "Yönetim", status: "inactive", hireDate: "2022-11-05" },
-  { id: 5, name: "Ali Çelik", email: "ali@ulas.com", phone: "0536 567 8901", position: "Sürücü", department: "Lojistik", status: "active", hireDate: "2023-04-12" },
-];
-
 const statCards = [
   {
     label: "Toplam Personel",
     icon: "👥",
-    getValue: (list: Personnel[]) => list.length,
+    getValue: (list: any[]) => list.length,
     color: "bg-blue-500",
   },
   {
     label: "Aktif Personel",
     icon: "✅",
-    getValue: (list: Personnel[]) => list.filter((p) => p.status === "active").length,
+    getValue: (list: any[]) => list.filter((p) => p.status === "active").length,
     color: "bg-green-500",
   },
   {
     label: "Sürücüler",
     icon: "🚗",
-    getValue: (list: Personnel[]) => list.filter((p) => p.position === "Sürücü").length,
+    getValue: (list: any[]) => list.filter((p) => p.position === "driver").length,
     color: "bg-purple-500",
   },
   {
@@ -67,22 +60,17 @@ const PersonnelPage: React.FC = () => {
   const theme = useSelector((state: RootState) => state.theme.theme);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [personnel, setPersonnel] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    position: "driver",
+    position: "",
     department: "",
-    hireDate: new Date().toISOString().split("T")[0],
     status: "active",
   });
-
-  const personnel: Personnel[] = mockPersonnel.filter(
-    (person) =>
-      person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.position.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -90,19 +78,59 @@ const PersonnelPage: React.FC = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Load personnel on component mount
+  useEffect(() => {
+    const loadPersonnel = async () => {
+      try {
+        const personnelData = await personnelUtils.getAllPersonnel();
+        setPersonnel(personnelData || []);
+      } catch (error) {
+        console.error('Error loading personnel:', error);
+        setError('Personel yüklenirken hata oluştu');
+      }
+    };
+    loadPersonnel();
+  }, []);
+
+  const filteredPersonnel = personnel.filter(
+    (person) =>
+      person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      person.position.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Personel başarıyla eklendi!");
-    setShowAddForm(false);
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      position: "driver",
-      department: "",
-      hireDate: new Date().toISOString().split("T")[0],
-      status: "active",
-    });
+    setLoading(true);
+    setError(null);
+
+    try {
+      const newPersonnelData = {
+        ...formData,
+        status: formData.status as 'active' | 'inactive'
+      };
+      await personnelUtils.createPersonnel(newPersonnelData);
+      alert("Personel başarıyla eklendi!");
+      setShowAddForm(false);
+      
+      // Reload personnel
+      const updatedPersonnelData = await personnelUtils.getAllPersonnel();
+      setPersonnel(updatedPersonnelData || []);
+      
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        position: "",
+        department: "",
+        status: "active",
+      });
+    } catch (error: any) {
+      console.error('Error creating personnel:', error);
+      setError(`Personel eklenirken hata oluştu: ${error.message || error.details || 'Bilinmeyen hata'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -118,7 +146,7 @@ const PersonnelPage: React.FC = () => {
         className="mb-4 sm:mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        transition={{ duration: 0.3 }}
       >
         <h1
           className={`text-xl sm:text-3xl font-bold mb-1 ${
@@ -137,7 +165,7 @@ const PersonnelPage: React.FC = () => {
         className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-8 mb-6 sm:mb-10"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
       >
         {statCards.map((card, index) => (
           <motion.div
@@ -149,7 +177,7 @@ const PersonnelPage: React.FC = () => {
             }`}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 + (index * 0.1) }}
+            transition={{ duration: 0.25, delay: 0.2 + (index * 0.05) }}
           >
             <div
               className={`w-10 h-10 sm:w-12 sm:h-12 ${card.color} text-white rounded-lg flex items-center justify-center text-xl sm:text-2xl`}
@@ -169,7 +197,7 @@ const PersonnelPage: React.FC = () => {
                   theme === "dark" ? "text-gray-100" : "text-gray-800"
                 }`}
               >
-                {card.getValue(personnel)}
+                {card.getValue(filteredPersonnel)}
               </div>
             </div>
           </motion.div>
@@ -181,7 +209,7 @@ const PersonnelPage: React.FC = () => {
         className="flex gap-3 mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.8 }}
+        transition={{ duration: 0.3, delay: 0.4 }}
       >
         <input
           type="text"
@@ -213,19 +241,19 @@ const PersonnelPage: React.FC = () => {
         className="block sm:hidden space-y-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 1.0 }}
+        transition={{ duration: 0.3, delay: 0.5 }}
       >
-        {personnel.length === 0 && (
+        {filteredPersonnel.length === 0 && (
           <div className={`text-center py-8 ${
             theme === "dark" ? "text-gray-500" : "text-gray-400"
           }`}>Kayıt bulunamadı.</div>
         )}
-        {personnel.map((person, index) => (
+        {filteredPersonnel.map((person, index) => (
           <motion.div
             key={person.id}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.2 + (index * 0.1) }}
+            transition={{ duration: 0.25, delay: 0.6 + (index * 0.05) }}
           >
             <Link
               href={`/auth/userPage?id=${person.id}&name=${encodeURIComponent(person.name)}&email=${encodeURIComponent(person.email)}&role=${encodeURIComponent(person.position)}&department=${encodeURIComponent(person.department)}&phone=${encodeURIComponent(person.phone)}&status=${person.status}`}
@@ -305,7 +333,7 @@ const PersonnelPage: React.FC = () => {
         className="hidden sm:block overflow-x-auto rounded-xl"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 1.0 }}
+        transition={{ duration: 0.3, delay: 0.6 }}
       >
         <table className={`min-w-[700px] w-full text-sm ${theme === "dark" ? "bg-slate-800" : "bg-slate-50"}`}>
           <thead className={`sticky top-0 z-10 ${theme === "dark" ? "bg-slate-800" : "bg-gray-50"}`}>
@@ -331,20 +359,20 @@ const PersonnelPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className={`divide-y ${theme === "dark" ? "divide-slate-700" : "divide-gray-200"}`}>
-            {personnel.length === 0 && (
+            {filteredPersonnel.length === 0 && (
               <tr>
                 <td colSpan={6} className={`text-center py-8 ${
                   theme === "dark" ? "text-gray-500" : "text-gray-400"
                 }`}>Kayıt bulunamadı.</td>
               </tr>
             )}
-            {personnel.map((person, index) => (
+            {filteredPersonnel.map((person, index) => (
               <motion.tr 
                 key={person.id} 
                 className={`hover:${theme === "dark" ? "bg-slate-700" : "bg-gray-100"} transition-colors`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 1.2 + (index * 0.1) }}
+                transition={{ duration: 0.25, delay: 0.6 + (index * 0.05) }}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <Link
@@ -406,6 +434,13 @@ const PersonnelPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
           <div className={`w-full max-w-md rounded-xl shadow-lg p-4 sm:p-6 ${theme === "dark" ? "bg-slate-800" : "bg-white"}`}>
             <h2 className={`text-lg sm:text-xl font-semibold mb-4 ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>Yeni Personel Ekle</h2>
+            
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                {error}
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               <div>
                 <label className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-200" : "text-gray-700"}`}>Ad Soyad *</label>
@@ -468,9 +503,10 @@ const PersonnelPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 text-sm sm:text-base"
+                  disabled={loading}
+                  className={`flex-1 bg-blue-600 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 text-sm sm:text-base ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  Ekle
+                  {loading ? 'Ekleniyor...' : 'Ekle'}
                 </button>
                 <button
                   type="button"
