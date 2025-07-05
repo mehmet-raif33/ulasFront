@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { login, setLoading, setError, clearError } from '../redux/sliceses/authSlices';
@@ -55,8 +55,12 @@ const Auth: React.FC = () => {
             
             dispatch(login(userData));
             router.push('/');
-        } catch (error: any) {
-            dispatch(setError(error.message || 'Bir hata oluştu'));
+        } catch (error: unknown) {
+            let message = 'Bir hata oluştu';
+            if (error && typeof error === 'object' && 'message' in error) {
+                message = (error as { message?: string }).message || message;
+            }
+            dispatch(setError(message));
         }
     };
 
@@ -66,8 +70,12 @@ const Auth: React.FC = () => {
         
         try {
             await authUtils.signInWithGoogle();
-        } catch (error: any) {
-            dispatch(setError(error.message || 'Google girişi başarısız'));
+        } catch (error: unknown) {
+            let message = 'Google girişi başarısız';
+            if (error && typeof error === 'object' && 'message' in error) {
+                message = (error as { message?: string }).message || message;
+            }
+            dispatch(setError(message));
         }
     };
 

@@ -2,9 +2,9 @@ import { supabase } from './supabase'
 import type { Database } from './supabase'
 
 // Type definitions
-type User = Database['public']['Tables']['users']['Row']
-type Vehicle = Database['public']['Tables']['vehicles']['Row']
-type Personnel = Database['public']['Tables']['personnel']['Row']
+export type User = Database['public']['Tables']['users']['Row']
+export type Vehicle = Database['public']['Tables']['vehicles']['Row']
+export type Personnel = Database['public']['Tables']['personnel']['Row']
 type Transaction = Database['public']['Tables']['transactions']['Row']
 
 // User functions

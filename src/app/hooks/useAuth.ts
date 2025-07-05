@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
-import { login, logout, setError } from '../redux/sliceses/authSlices'
+import { login, logout } from '../redux/sliceses/authSlices'
 import { authUtils } from '../lib/auth-utils'
 
 export const useAuth = () => {
@@ -14,7 +14,7 @@ export const useAuth = () => {
         if (user) {
           dispatch(login(user))
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Auth check error:', error)
         // Hata durumunda logout yap
         dispatch(logout())
@@ -33,11 +33,11 @@ export const useAuth = () => {
     })
 
     // Hata durumunda da logout yap
-    const handleError = (error: any) => {
-      console.error('Auth error:', error)
-      dispatch(setError(error.message || 'Auth hatası'))
-      dispatch(logout())
-    }
+    // const handleError = (error: any) => {
+    //   console.error('Auth error:', error)
+    //   dispatch(setError(error.message || 'Auth hatası'))
+    //   dispatch(logout())
+    // }
 
     return () => {
       subscription.unsubscribe()

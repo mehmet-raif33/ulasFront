@@ -1,13 +1,14 @@
 "use client"
 import './globals.css'
 import { useSelector } from 'react-redux';
-import { selectUser } from './redux/sliceses/authSlices';
+import { selectUser, selectIsAdmin } from './redux/sliceses/authSlices';
 import { RootState } from './redux/store';
 import { motion } from 'framer-motion';
 
 
 export default function Home() {
   const user = useSelector(selectUser);
+  const isAdmin = useSelector(selectIsAdmin);
   const theme = useSelector((state: RootState) => state.theme.theme);
 
   // Mock data for dashboard
@@ -192,7 +193,7 @@ export default function Home() {
               </div>
               <div>
                 <p className={`font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{user?.email || 'Misafir Kullanıcı'}</p>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>{user?.isAdmin ? 'Admin' : 'Kullanıcı'}</p>
+                <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>{isAdmin ? 'Admin' : 'Kullanıcı'}</p>
               </div>
             </div>
             <div className={`pt-3 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-gray-200'}`}>

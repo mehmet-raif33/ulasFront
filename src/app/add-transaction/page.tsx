@@ -5,14 +5,15 @@ import { RootState } from '../redux/store';
 import { motion } from 'framer-motion';
 import { vehicleUtils, personnelUtils, transactionUtils } from '../lib/supabase-utils';
 import { useRouter } from 'next/navigation';
+import type { Vehicle, Personnel } from '../lib/supabase-utils';
 
 const AddTransactionPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [vehicles, setVehicles] = useState<any[]>([]);
-    const [personnel, setPersonnel] = useState<any[]>([]);
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [personnel, setPersonnel] = useState<Personnel[]>([]);
     const [formData, setFormData] = useState({
         vehicle_id: '',
         personnel_id: '',
@@ -39,7 +40,7 @@ const AddTransactionPage: React.FC = () => {
                 ]);
                 setVehicles(vehiclesData || []);
                 setPersonnel(personnelData || []);
-            } catch (error) {
+            } catch (error: unknown) {
                 console.error('Error loading data:', error);
                 setError('Veriler yüklenirken hata oluştu');
             }
@@ -63,9 +64,13 @@ const AddTransactionPage: React.FC = () => {
             await transactionUtils.createTransaction(transactionData);
             alert('İşlem başarıyla eklendi!');
             router.push('/vehicles');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error creating transaction:', error);
-            setError(`İşlem eklenirken hata oluştu: ${error.message || error.details || 'Bilinmeyen hata'}`);
+            let message = 'İşlem eklenirken hata oluştu';
+            if (error && typeof error === 'object' && 'message' in error) {
+                message += `: ${(error as { message?: string }).message}`;
+            }
+            setError(message);
         } finally {
             setLoading(false);
         }

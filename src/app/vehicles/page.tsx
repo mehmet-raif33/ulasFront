@@ -5,6 +5,7 @@ import { RootState } from '../redux/store';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { vehicleUtils } from '../lib/supabase-utils';
+import type { Vehicle } from '../lib/supabase-utils';
 
 const VehiclesPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
@@ -12,7 +13,7 @@ const VehiclesPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [vehicles, setVehicles] = useState<any[]>([]);
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [formData, setFormData] = useState({
         plate: '',
         brand: '',
@@ -35,7 +36,7 @@ const VehiclesPage: React.FC = () => {
             try {
                 const vehiclesData = await vehicleUtils.getAllVehicles();
                 setVehicles(vehiclesData || []);
-            } catch (error) {
+            } catch (error: unknown) {
                 console.error('Error loading vehicles:', error);
                 setError('Araçlar yüklenirken hata oluştu');
             }
@@ -100,9 +101,13 @@ const VehiclesPage: React.FC = () => {
                 fuel_type: 'dizel',
                 status: 'active'
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error creating vehicle:', error);
-            setError(`Araç eklenirken hata oluştu: ${error.message || error.details || 'Bilinmeyen hata'}`);
+            let message = 'Araç eklenirken hata oluştu';
+            if (error && typeof error === 'object' && 'message' in error) {
+                message += `: ${(error as { message?: string }).message}`;
+            }
+            setError(message);
             setLoading(false);
         } finally {
             console.log('Form submission completed');

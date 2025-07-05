@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import NavbarCom from "./NavbarCom";
-import ThemeEffect, { ThemeFAB } from "./ThemeEffect";
+import { ThemeFAB } from "./ThemeEffect";
 import { useAuth } from "../hooks/useAuth";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {

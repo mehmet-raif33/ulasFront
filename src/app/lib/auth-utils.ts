@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { userUtils } from './supabase-utils'
+import type { User } from './supabase-utils'
 
 export const authUtils = {
   // Email/Password ile giriş
@@ -24,7 +25,7 @@ export const authUtils = {
       }
 
       throw new Error('Giriş başarısız')
-    } catch (error) {
+    } catch (error: unknown) {
       throw error
     }
   },
@@ -57,7 +58,7 @@ export const authUtils = {
       }
 
       throw new Error('Kayıt başarısız')
-    } catch (error) {
+    } catch (error: unknown) {
       throw error
     }
   },
@@ -74,7 +75,7 @@ export const authUtils = {
 
       if (error) throw error
       return data
-    } catch (error) {
+    } catch (error: unknown) {
       throw error
     }
   },
@@ -91,7 +92,7 @@ export const authUtils = {
       }
       
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       throw error
     }
   },
@@ -112,7 +113,7 @@ export const authUtils = {
             name: profile.name,
             role: profile.role,
           }
-        } catch (profileError) {
+        } catch {
           // Profil bulunamazsa auth user bilgilerini kullan
           return {
             id: user.id,
@@ -124,13 +125,13 @@ export const authUtils = {
       }
 
       return null
-    } catch (error) {
+    } catch (error: unknown) {
       throw error
     }
   },
 
   // Auth state değişikliklerini dinle
-  onAuthStateChange(callback: (user: any) => void) {
+  onAuthStateChange(callback: (user: User | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         try {
@@ -140,14 +141,18 @@ export const authUtils = {
             email: session.user.email!,
             name: profile.name,
             role: profile.role,
+            created_at: profile.created_at,
+            updated_at: profile.updated_at,
           })
-        } catch (profileError) {
+        } catch {
           // Profil bulunamazsa auth user bilgilerini kullan
           callback({
             id: session.user.id,
             email: session.user.email!,
             name: session.user.user_metadata?.name || 'Kullanıcı',
             role: session.user.user_metadata?.role || 'user',
+            created_at: session.user.created_at,
+            updated_at: session.user.updated_at || session.user.created_at,
           })
         }
       } else if (event === 'SIGNED_OUT') {
@@ -165,7 +170,7 @@ export const authUtils = {
 
       if (error) throw error
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       throw error
     }
   },
@@ -179,7 +184,7 @@ export const authUtils = {
 
       if (error) throw error
       return true
-    } catch (error) {
+    } catch (error: unknown) {
       throw error
     }
   },
@@ -204,7 +209,7 @@ export const authUtils = {
       }
 
       return user
-    } catch (error) {
+    } catch (error: unknown) {
       throw error
     }
   }

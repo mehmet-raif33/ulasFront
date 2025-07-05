@@ -5,36 +5,25 @@ import { RootState } from "../redux/store";
 import Link from "next/link";
 import { motion } from 'framer-motion';
 import { personnelUtils } from '../lib/supabase-utils';
-
-// Define Personnel type
-interface Personnel {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  position: string;
-  department: string;
-  status: string;
-  hireDate: string;
-}
+import type { Personnel } from '../lib/supabase-utils';
 
 const statCards = [
   {
     label: "Toplam Personel",
     icon: "👥",
-    getValue: (list: any[]) => list.length,
+    getValue: (list: Personnel[]) => list.length,
     color: "bg-blue-500",
   },
   {
     label: "Aktif Personel",
     icon: "✅",
-    getValue: (list: any[]) => list.filter((p) => p.status === "active").length,
+    getValue: (list: Personnel[]) => list.filter((p) => p.status === "active").length,
     color: "bg-green-500",
   },
   {
     label: "Sürücüler",
     icon: "🚗",
-    getValue: (list: any[]) => list.filter((p) => p.position === "driver").length,
+    getValue: (list: Personnel[]) => list.filter((p) => p.position === "driver").length,
     color: "bg-purple-500",
   },
   {
@@ -62,7 +51,7 @@ const PersonnelPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [personnel, setPersonnel] = useState<any[]>([]);
+  const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -84,7 +73,7 @@ const PersonnelPage: React.FC = () => {
       try {
         const personnelData = await personnelUtils.getAllPersonnel();
         setPersonnel(personnelData || []);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error loading personnel:', error);
         setError('Personel yüklenirken hata oluştu');
       }
@@ -125,9 +114,13 @@ const PersonnelPage: React.FC = () => {
         department: "",
         status: "active",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating personnel:', error);
-      setError(`Personel eklenirken hata oluştu: ${error.message || error.details || 'Bilinmeyen hata'}`);
+      let message = 'Personel eklenirken hata oluştu';
+      if (error && typeof error === 'object' && 'message' in error) {
+        message += `: ${(error as { message?: string }).message}`;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }

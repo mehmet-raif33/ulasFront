@@ -21,9 +21,13 @@ export default function AuthCallback() {
           dispatch(setError('Giriş başarısız'))
           router.push('/auth')
         }
-      } catch (error: any) {
-        dispatch(setError(error.message || 'Bir hata oluştu'))
-        router.push('/auth')
+      } catch (error: unknown) {
+        let message = 'Bir hata oluştu';
+        if (error && typeof error === 'object' && 'message' in error) {
+          message = (error as { message?: string }).message || message;
+        }
+        dispatch(setError(message));
+        router.push('/auth');
       }
     }
 
