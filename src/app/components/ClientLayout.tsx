@@ -2,13 +2,9 @@
 import React, { useState } from "react";
 import NavbarCom from "./NavbarCom";
 import { ThemeFAB } from "./ThemeEffect";
-import { useAuth } from "../hooks/useAuth";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  
-  // Auth state'i dinle
-  useAuth();
   
   return (
     <>

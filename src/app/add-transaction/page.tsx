@@ -3,9 +3,83 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { motion } from 'framer-motion';
-import { vehicleUtils, personnelUtils, transactionUtils } from '../lib/supabase-utils';
 import { useRouter } from 'next/navigation';
-import type { Vehicle, Personnel } from '../lib/supabase-utils';
+
+// Mock data types
+interface Vehicle {
+  id: string;
+  plate: string;
+  brand: string;
+  model: string;
+  year: number;
+  fuel_type: string;
+  status: 'active' | 'inactive' | 'maintenance';
+  created_at: string;
+  updated_at: string;
+}
+
+interface Personnel {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  department: string;
+  position: string;
+  status: 'active' | 'inactive';
+  created_at: string;
+  updated_at: string;
+}
+
+// Mock data
+const mockVehicles: Vehicle[] = [
+  {
+    id: '1',
+    plate: '34ABC123',
+    brand: 'Mercedes',
+    model: 'Sprinter',
+    year: 2020,
+    fuel_type: 'dizel',
+    status: 'active',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '2',
+    plate: '06DEF456',
+    brand: 'Ford',
+    model: 'Transit',
+    year: 2021,
+    fuel_type: 'benzin',
+    status: 'active',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
+  }
+];
+
+const mockPersonnel: Personnel[] = [
+  {
+    id: '1',
+    name: 'Ahmet Yılmaz',
+    email: 'ahmet.yilmaz@ulas.com',
+    phone: '0532 123 4567',
+    department: 'Lojistik',
+    position: 'Sürücü',
+    status: 'active',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '2',
+    name: 'Fatma Demir',
+    email: 'fatma.demir@ulas.com',
+    phone: '0533 234 5678',
+    department: 'İnsan Kaynakları',
+    position: 'Müdür',
+    status: 'active',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
+  }
+];
 
 const AddTransactionPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
@@ -34,12 +108,10 @@ const AddTransactionPage: React.FC = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [vehiclesData, personnelData] = await Promise.all([
-                    vehicleUtils.getAllVehicles(),
-                    personnelUtils.getAllPersonnel()
-                ]);
-                setVehicles(vehiclesData || []);
-                setPersonnel(personnelData || []);
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 500));
+                setVehicles(mockVehicles);
+                setPersonnel(mockPersonnel);
             } catch (error: unknown) {
                 console.error('Error loading data:', error);
                 setError('Veriler yüklenirken hata oluştu');
@@ -61,7 +133,10 @@ const AddTransactionPage: React.FC = () => {
                 transaction_type: formData.transaction_type as 'fuel' | 'maintenance' | 'repair' | 'toll' | 'parking' | 'other'
             };
 
-            await transactionUtils.createTransaction(transactionData);
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            console.log('Transaction created:', transactionData);
             alert('İşlem başarıyla eklendi!');
             router.push('/vehicles');
         } catch (error: unknown) {
@@ -207,40 +282,33 @@ const AddTransactionPage: React.FC = () => {
                                 name="description"
                                 value={formData.description}
                                 onChange={handleInputChange}
-                                rows={4}
+                                rows={3}
                                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
                                 placeholder="İşlem detaylarını buraya yazın..."
                             />
                         </div>
-                        {/* Submit Buttons */}
-                        <div className="flex justify-center gap-4 pt-6 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-gray-200'}">
+                        {/* Submit Button */}
+                        <div className="flex gap-4 pt-4">
+                            <button
+                                type="button"
+                                onClick={() => router.back()}
+                                className={`flex-1 px-6 py-3 border rounded-lg font-medium transition-colors duration-200 ${
+                                    theme === 'dark' 
+                                        ? 'border-slate-600 text-gray-300 hover:bg-slate-700' 
+                                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                İptal
+                            </button>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className={`bg-blue-600 text-white py-4 px-8 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'} focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-3 min-w-[120px] ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                <span>{loading ? '⏳' : '📋'}</span>
-                                <span>{loading ? 'Ekleniyor...' : 'Ekle'}</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setFormData({
-                                        vehicle_id: '',
-                                        personnel_id: '',
-                                        transaction_type: 'fuel',
-                                        description: '',
-                                        amount: '',
-                                        date: new Date().toISOString().split('T')[0]
-                                    });
-                                }}
-                                className={`bg-gray-500 text-white py-4 px-8 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-700'} focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-3 min-w-[120px]`}
-                            >
-                                <span>🔄</span>
-                                <span>Temizle</span>
+                                {loading ? 'Ekleniyor...' : 'İşlem Ekle'}
                             </button>
                         </div>
-                    </form>
+                        </form>
                     </motion.div>
 
                     {/* Recent Transactions Preview */}
@@ -250,42 +318,44 @@ const AddTransactionPage: React.FC = () => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.6, delay: 0.6 }}
                     >
-                        <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Son Eklenen İşlemler</h2>
-                        <motion.div 
-                            className="space-y-3"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.6, delay: 0.8 }}
-                        >
-                            <motion.div 
-                                className={`flex items-center justify-between p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-900' : 'bg-gray-50'}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5, delay: 1.0 }}
-                            > 
-                                <div>
-                                    <p className={`font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>34 ABC 123 - Teslim Alma</p>
-                                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Ahmet Yılmaz • 2 saat önce</p>
+                        <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Son İşlemler</h2>
+                        <div className="space-y-4">
+                            <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p className={`font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>34ABC123 - Yakıt</p>
+                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Ahmet Yılmaz</p>
+                                    </div>
+                                    <span className={`text-lg font-bold ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>₺450.00</span>
                                 </div>
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${theme === 'dark' ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'}`}>
-                                    Tamamlandı
-                                </span>
-                            </motion.div>
-                            <motion.div 
-                                className={`flex items-center justify-between p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-900' : 'bg-gray-50'}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5, delay: 1.2 }}
-                            > 
-                                <div>
-                                    <p className={`font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>06 XYZ 789 - Bakım</p>
-                                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Mehmet Demir • 5 saat önce</p>
+                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Dizel yakıt alımı</p>
+                                <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>2024-01-15</p>
+                            </div>
+                            
+                            <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p className={`font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>06DEF456 - Bakım</p>
+                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Fatma Demir</p>
+                                    </div>
+                                    <span className={`text-lg font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>₺1,200.00</span>
                                 </div>
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${theme === 'dark' ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'}`}>
-                                    Devam Ediyor
-                                </span>
-                            </motion.div>
-                        </motion.div>
+                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Periyodik bakım</p>
+                                <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>2024-01-14</p>
+                            </div>
+                            
+                            <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p className={`font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>34ABC123 - Otoyol</p>
+                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Ahmet Yılmaz</p>
+                                    </div>
+                                    <span className={`text-lg font-bold ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`}>₺25.00</span>
+                                </div>
+                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>İstanbul-Ankara otoyol ücreti</p>
+                                <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>2024-01-13</p>
+                            </div>
+                        </div>
                     </motion.div>
                 </div>
             </motion.div>

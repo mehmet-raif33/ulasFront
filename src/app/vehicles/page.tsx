@@ -4,8 +4,56 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { vehicleUtils } from '../lib/supabase-utils';
-import type { Vehicle } from '../lib/supabase-utils';
+
+// Mock data types
+interface Vehicle {
+  id: string;
+  plate: string;
+  brand: string;
+  model: string;
+  year: number;
+  fuel_type: string;
+  status: 'active' | 'inactive' | 'maintenance';
+  created_at: string;
+  updated_at: string;
+}
+
+// Mock data
+const mockVehicles: Vehicle[] = [
+  {
+    id: '1',
+    plate: '34ABC123',
+    brand: 'Mercedes',
+    model: 'Sprinter',
+    year: 2020,
+    fuel_type: 'dizel',
+    status: 'active',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '2',
+    plate: '06DEF456',
+    brand: 'Ford',
+    model: 'Transit',
+    year: 2021,
+    fuel_type: 'benzin',
+    status: 'active',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '3',
+    plate: '35GHI789',
+    brand: 'Volkswagen',
+    model: 'Crafter',
+    year: 2019,
+    fuel_type: 'dizel',
+    status: 'maintenance',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
+  }
+];
 
 const VehiclesPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
@@ -34,8 +82,9 @@ const VehiclesPage: React.FC = () => {
     useEffect(() => {
         const loadVehicles = async () => {
             try {
-                const vehiclesData = await vehicleUtils.getAllVehicles();
-                setVehicles(vehiclesData || []);
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 500));
+                setVehicles(mockVehicles);
             } catch (error: unknown) {
                 console.error('Error loading vehicles:', error);
                 setError('Araçlar yüklenirken hata oluştu');
@@ -73,25 +122,29 @@ const VehiclesPage: React.FC = () => {
             }
 
             const vehicleData = {
+                id: Date.now().toString(),
                 plate: formData.plate.trim().toUpperCase(),
                 brand: formData.brand.trim(),
                 model: formData.model.trim(),
                 year: parseInt(formData.year),
                 fuel_type: formData.fuel_type,
-                status: formData.status as 'active' | 'inactive' | 'maintenance'
+                status: formData.status as 'active' | 'inactive' | 'maintenance',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             };
 
             console.log('Sending vehicle data:', vehicleData);
-            const result = await vehicleUtils.createVehicle(vehicleData);
-            console.log('Vehicle created successfully:', result);
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Add to local state
+            setVehicles(prev => [...prev, vehicleData]);
+            
+            console.log('Vehicle created successfully:', vehicleData);
             alert('Araç başarıyla eklendi!');
             setShowAddForm(false);
             setError(null);
             setLoading(false);
-            
-            // Reload vehicles
-            const vehiclesData = await vehicleUtils.getAllVehicles();
-            setVehicles(vehiclesData || []);
             
             setFormData({
                 plate: '',
@@ -153,8 +206,6 @@ const VehiclesPage: React.FC = () => {
                 <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Araç Yönetimi</h1>
                 <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Araç bilgilerini görüntüleyin ve yönetin</p>
             </motion.div>
-
-
 
             {/* Stats Cards */}
             <motion.div 
@@ -222,11 +273,11 @@ const VehiclesPage: React.FC = () => {
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Ortalama Yaş</p>
-                            <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>2.2</p>
+                            <p className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Pasif Araçlar</p>
+                            <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{vehicles.filter(v => v.status === 'inactive').length}</p>
                         </div>
-                        <div className="w-12 h-12 bg-purple-500 text-white rounded-lg flex items-center justify-center text-2xl">
-                            📊
+                        <div className="w-12 h-12 bg-red-500 text-white rounded-lg flex items-center justify-center text-2xl">
+                            ❌
                         </div>
                     </div>
                 </motion.div>
@@ -237,7 +288,7 @@ const VehiclesPage: React.FC = () => {
                 className="flex flex-col sm:flex-row gap-4 mb-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.4 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
             >
                 <div className="flex-1">
                     <input
@@ -245,196 +296,263 @@ const VehiclesPage: React.FC = () => {
                         placeholder="Araç ara..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
+                        className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            theme === 'dark' 
+                                ? 'bg-slate-800 border-slate-600 text-gray-100 placeholder-gray-400' 
+                                : 'bg-white border-gray-300 text-gray-800 placeholder-gray-500'
+                        }`}
                     />
                 </div>
                 <button
                     onClick={() => setShowAddForm(true)}
-                    className={`bg-blue-600 text-white px-6 py-3 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'} transition-colors duration-200 flex items-center justify-center space-x-2`}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
-                    <span>🚗</span>
-                    <span>Yeni Araç</span>
+                    + Araç Ekle
                 </button>
             </motion.div>
 
-            {/* Vehicles Grid */}
+            {/* Error Message */}
+            {error && (
+                <motion.div 
+                    className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                >
+                    {error}
+                </motion.div>
+            )}
+
+            {/* Add Vehicle Form */}
+            {showAddForm && (
+                <motion.div 
+                    className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                >
+                    <motion.div 
+                        className={`w-full max-w-md rounded-xl shadow-lg p-6 ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold">Yeni Araç Ekle</h2>
+                            <button
+                                onClick={() => setShowAddForm(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Plaka *</label>
+                                <input
+                                    type="text"
+                                    name="plate"
+                                    value={formData.plate}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        theme === 'dark' 
+                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    }`}
+                                    placeholder="34ABC123"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Marka *</label>
+                                <input
+                                    type="text"
+                                    name="brand"
+                                    value={formData.brand}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        theme === 'dark' 
+                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    }`}
+                                    placeholder="Mercedes"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Model *</label>
+                                <input
+                                    type="text"
+                                    name="model"
+                                    value={formData.model}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        theme === 'dark' 
+                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    }`}
+                                    placeholder="Sprinter"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Yıl *</label>
+                                <input
+                                    type="number"
+                                    name="year"
+                                    value={formData.year}
+                                    onChange={handleInputChange}
+                                    min="1900"
+                                    max={new Date().getFullYear() + 1}
+                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        theme === 'dark' 
+                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    }`}
+                                    placeholder="2020"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Yakıt Tipi</label>
+                                <select
+                                    name="fuel_type"
+                                    value={formData.fuel_type}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        theme === 'dark' 
+                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    }`}
+                                >
+                                    <option value="dizel">Dizel</option>
+                                    <option value="benzin">Benzin</option>
+                                    <option value="elektrik">Elektrik</option>
+                                    <option value="hibrit">Hibrit</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Durum</label>
+                                <select
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        theme === 'dark' 
+                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    }`}
+                                >
+                                    <option value="active">Aktif</option>
+                                    <option value="inactive">Pasif</option>
+                                    <option value="maintenance">Bakımda</option>
+                                </select>
+                            </div>
+                            
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddForm(false)}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                                >
+                                    {loading ? 'Ekleniyor...' : 'Ekle'}
+                                </button>
+                            </div>
+                        </form>
+                    </motion.div>
+                </motion.div>
+            )}
+
+            {/* Vehicles List */}
             <motion.div 
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.5 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
             >
                 {filteredVehicles.map((vehicle, index) => (
                     <motion.div
                         key={vehicle.id}
-                        initial={{ opacity: 0, y: 30 }}
+                        className={`rounded-xl shadow-sm border p-6 cursor-pointer hover:shadow-md transition-shadow ${
+                            theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.25, delay: 0.6 + (index * 0.05) }}
+                        transition={{ duration: 0.3, delay: 0.1 * index }}
+                        whileHover={{ y: -2 }}
                     >
-                        <Link 
-                            href={`/vehicles/${vehicle.plate.replace(/\s+/g, '')}`}
-                            className={`block rounded-xl shadow-sm border p-6 hover:shadow-md transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
-                        >
+                        <Link href={`/vehicles/${vehicle.plate}`}>
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{vehicle.plate}</h3>
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(vehicle.status)}`}>{getStatusText(vehicle.status)}</span>
+                                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                                    {vehicle.plate}
+                                </h3>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(vehicle.status)}`}>
+                                    {getStatusText(vehicle.status)}
+                                </span>
                             </div>
-                            <div className="space-y-3">
-                                <div className="flex items-center space-x-3">
-                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>🚙</span>
-                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.brand} {vehicle.model}</span>
+                            
+                            <div className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Marka:</span>
+                                    <span className={theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}>{vehicle.brand}</span>
                                 </div>
-                                <div className="flex items-center space-x-3">
-                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>📅</span>
-                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.year}</span>
+                                <div className="flex justify-between">
+                                    <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Model:</span>
+                                    <span className={theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}>{vehicle.model}</span>
                                 </div>
-                                <div className="flex items-center space-x-3">
-                                    <span className={`text-gray-500 ${theme === 'dark' ? 'dark:text-gray-400' : ''}`}>⛽</span>
-                                    <span className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{vehicle.fuel_type}</span>
+                                <div className="flex justify-between">
+                                    <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Yıl:</span>
+                                    <span className={theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}>{vehicle.year}</span>
                                 </div>
-
-                            </div>
-                            <div className={`flex gap-2 mt-6 pt-4 border-t ${theme === 'dark' ? 'border-slate-700' : 'border-gray-200'}`}>
-                                <button 
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        // Düzenle işlemi burada yapılacak
-                                    }}
-                                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200 ${theme === 'dark' ? 'bg-blue-900 text-blue-200 hover:bg-blue-800' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}
-                                >
-                                    Düzenle
-                                </button>
-                                <button 
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        // Sil işlemi burada yapılacak
-                                    }}
-                                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors duration-200 ${theme === 'dark' ? 'bg-red-900 text-red-200 hover:bg-red-800' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}
-                                >
-                                    Sil
-                                </button>
+                                <div className="flex justify-between">
+                                    <span className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Yakıt:</span>
+                                    <span className={theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}>{vehicle.fuel_type}</span>
+                                </div>
                             </div>
                         </Link>
                     </motion.div>
                 ))}
             </motion.div>
 
-            {/* Add Vehicle Modal */}
-            {showAddForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className={`rounded-xl shadow-lg max-w-md w-full p-6 ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}> 
-                        <h2 className={`text-xl font-semibold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Yeni Araç Ekle</h2>
-                        
-                        {error && (
-                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                                {error}
-                            </div>
-                        )}
-                        
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Plaka *</label>
-                                <input
-                                    type="text"
-                                    name="plate"
-                                    value={formData.plate}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                                    placeholder="34 ABC 123"
-                                    maxLength={20}
-                                    required
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Marka *</label>
-                                    <input
-                                        type="text"
-                                        name="brand"
-                                        value={formData.brand}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Model *</label>
-                                    <input
-                                        type="text"
-                                        name="model"
-                                        value={formData.model}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Yıl *</label>
-                                <input
-                                    type="number"
-                                    name="year"
-                                    value={formData.year}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                                    min="1900"
-                                    max={new Date().getFullYear() + 1}
-                                    placeholder="2020"
-                                    required
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Yakıt Türü</label>
-                                    <select
-                                        name="fuel_type"
-                                        value={formData.fuel_type}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
-                                        required
-                                    >
-                                        <option value="benzin">Benzin</option>
-                                        <option value="dizel">Dizel</option>
-                                        <option value="elektrik">Elektrik</option>
-                                        <option value="hibrit">Hibrit</option>
-                                        <option value="lpg">LPG</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Durum</label>
-                                    <select
-                                        name="status"
-                                        value={formData.status}
-                                        onChange={handleInputChange}
-                                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${theme === 'dark' ? 'bg-slate-900 border-slate-700 text-gray-100' : 'bg-white border-gray-300 text-gray-900'}`}
-                                        required
-                                    >
-                                        <option value="active">Aktif</option>
-                                        <option value="maintenance">Bakımda</option>
-                                        <option value="inactive">Pasif</option>
-                                    </select>
-                                </div>
-                            </div>
+            {/* Empty State */}
+            {filteredVehicles.length === 0 && vehicles.length > 0 && (
+                <motion.div 
+                    className="text-center py-12"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                >
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h3 className={`text-xl font-semibold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                        Araç Bulunamadı
+                    </h3>
+                    <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                        &quot;{searchTerm}&quot; ile eşleşen araç bulunamadı.
+                    </p>
+                </motion.div>
+            )}
 
-                            <div className="flex gap-3 pt-4">
-                                <button 
-                                    type="submit" 
-                                    disabled={loading}
-                                    className={`flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'} transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    {loading ? 'Ekleniyor...' : 'Ekle'}
-                                </button>
-                                <button type="button" onClick={() => setShowAddForm(false)} className={`flex-1 bg-gray-500 text-white py-3 px-4 rounded-lg font-medium ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-700'} transition-colors duration-200`}>
-                                    İptal
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+            {vehicles.length === 0 && (
+                <motion.div 
+                    className="text-center py-12"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                >
+                    <div className="text-6xl mb-4">🚗</div>
+                    <h3 className={`text-xl font-semibold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                        Henüz Araç Yok
+                    </h3>
+                    <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>
+                        İlk aracınızı eklemek için &quot;Araç Ekle&quot; butonuna tıklayın.
+                    </p>
+                </motion.div>
             )}
         </div>
     );

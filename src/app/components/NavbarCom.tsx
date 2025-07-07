@@ -6,7 +6,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../redux/store";
 import { toggleTheme } from "../redux/sliceses/themeSlice";
 import { logout } from "../redux/sliceses/authSlices";
-import { authUtils } from "../lib/auth-utils";
 
 const NavbarList = [
     { name: "Gösterge Paneli", href: "/", icon: "📊" },
@@ -35,7 +34,6 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
 
     const loggedOut = async () => {
         try {
-            await authUtils.signOut();
             dispatch(logout()); // Redux state'i temizle
             router.push('/auth');
             setIsOpen(false);

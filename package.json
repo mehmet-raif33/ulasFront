@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
-    "@supabase/supabase-js": "^2.50.3",
     "framer-motion": "^12.20.1",
     "next": "15.3.4",
     "react": "^19.0.0",
