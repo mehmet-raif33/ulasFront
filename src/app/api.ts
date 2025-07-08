@@ -12,7 +12,7 @@ export async function loginApi({ username, password }: { username: string; passw
     const error = await res.json();
     throw new Error(error.message || 'Giriş başarısız');
   }
-  return res.json();
+  return res.json();  
 }
 
 export async function registerApi({ username, email, password, role }: { username: string; email: string; password: string; role?: string }) {
