@@ -29,9 +29,15 @@ const RegisterForm: React.FC = () => {
           role: data.user.role === "admin" ? "admin" : "user",
         })
       );
-    } catch (err: any) {
-      setFormError(err.message);
-      dispatch(setError(err.message));
+    } catch (err: unknown) {
+      let message = "Bir hata oluştu";
+      if (typeof err === "object" && err && "message" in err) {
+        message = (err as { message?: string }).message || message;
+      } else if (typeof err === "string") {
+        message = err;
+      }
+      setFormError(message);
+      dispatch(setError(message));
     } finally {
       dispatch(setLoading(false));
       setLoadingState(false);
