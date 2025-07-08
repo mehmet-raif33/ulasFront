@@ -4,6 +4,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import LoginForm from "../LoginForm";
+import RegisterForm from "../RegisterForm";
+import { selectIsLoggedIn } from "../../redux/sliceses/authSlices";
 
 const UserPageContent: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
@@ -320,17 +323,22 @@ const UserPageContent: React.FC = () => {
 };
 
 const UserPage: React.FC = () => {
+    const isLoggedIn = useSelector(selectIsLoggedIn);
     return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-950 flex items-center justify-center">
-                <div className="text-white text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                    <p>Yükleniyor...</p>
+        <div>
+            {!isLoggedIn ? (
+                <div className="flex flex-col md:flex-row gap-8 justify-center items-start my-8">
+                    <div className="w-full md:w-1/2">
+                        <LoginForm />
+                    </div>
+                    <div className="w-full md:w-1/2">
+                        <RegisterForm />
+                    </div>
                 </div>
-            </div>
-        }>
-            <UserPageContent />
-        </Suspense>
+            ) : (
+                <UserPageContent />
+            )}
+        </div>
     );
 };
 
