@@ -3,10 +3,10 @@ let API_BASE_URL = '';
 // Environment variables'dan API URL'ini al
 if (process.env.NODE_ENV === 'production') {
   // Production ortamında Railway server'ını kullan
-  API_BASE_URL = process.env.SERVER_API1 || 'https://ulasserver-production.up.railway.app';
+  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API1 || 'https://ulasserver-production.up.railway.app';
 } else {
   // Development ortamında local server'ı kullan
-  API_BASE_URL = process.env.SERVER_API || 'http://localhost:5000';
+  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API || 'http://localhost:5000';
 }
 
 // Fallback için güvenlik kontrolü

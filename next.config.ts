@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    SERVER_API: process.env.SERVER_API,
-    SERVER_API1: process.env.SERVER_API1,
+    NEXT_PUBLIC_SERVER_API: process.env.SERVER_API,
+    NEXT_PUBLIC_SERVER_API1: process.env.SERVER_API1,
   },
   
   // Vercel deployment optimizasyonları
