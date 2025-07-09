@@ -49,10 +49,16 @@ export const authSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    restoreAuth: (state, action: PayloadAction<{ id: string; email: string; name: string; role: 'admin' | 'user' }>) => {
+      state.isLoggedIn = true
+      state.user = action.payload
+      state.loading = false
+      state.error = null
+    },
   },
 })
 
-export const { login, logout, setLoading, setError, clearError } = authSlice.actions
+export const { login, logout, setLoading, setError, clearError, restoreAuth } = authSlice.actions
 
 // Selectors
 export const selectIsLoggedIn = (state: RootState) => state.auth.isLoggedIn

@@ -4,6 +4,7 @@ import "./globals.css";
 import ReduxProvider from "./components/ReduxProvider";
 import ThemeEffect from "./components/ThemeEffect";
 import ClientLayout from "./components/ClientLayout";
+import AuthInitializer from "./components/AuthInitializer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,9 +27,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr">
-      <body className={`${geistSans.variable} ${geistMono.variable} flex`}>
+    <html lang="tr" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} flex`} suppressHydrationWarning>
         <ReduxProvider>
+          <AuthInitializer />
           <ThemeEffect />
           <ClientLayout>{children}</ClientLayout>
         </ReduxProvider>

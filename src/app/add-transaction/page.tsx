@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
+import { selectIsLoggedIn } from '../redux/sliceses/authSlices';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
@@ -83,6 +84,7 @@ const mockPersonnel: Personnel[] = [
 
 const AddTransactionPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
+    const isLoggedIn = useSelector(selectIsLoggedIn);
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -96,6 +98,22 @@ const AddTransactionPage: React.FC = () => {
         amount: '',
         date: new Date().toISOString().split('T')[0]
     });
+
+    // Giriş yapmamış kullanıcıları landing page'e yönlendir
+    useEffect(() => {
+        if (!isLoggedIn) {
+            router.push('/landing');
+        }
+    }, [isLoggedIn, router]);
+
+    // Giriş yapmamış kullanıcılar için loading göster
+    if (!isLoggedIn) {
+        return (
+            <div className="flex-1 min-h-screen w-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({

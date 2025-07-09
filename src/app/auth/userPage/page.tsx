@@ -5,7 +5,6 @@ import { RootState } from '../../redux/store';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import LoginForm from "../LoginForm";
-import RegisterForm from "../RegisterForm";
 import { selectIsLoggedIn } from "../../redux/sliceses/authSlices";
 
 const UserPageContent: React.FC = () => {
@@ -327,12 +326,9 @@ const UserPage: React.FC = () => {
     return (
         <div>
             {!isLoggedIn ? (
-                <div className="flex flex-col md:flex-row gap-8 justify-center items-start my-8">
-                    <div className="w-full md:w-1/2">
+                <div className="flex justify-center items-start my-8">
+                    <div className="w-full max-w-md">
                         <LoginForm />
-                    </div>
-                    <div className="w-full md:w-1/2">
-                        <RegisterForm />
                     </div>
                 </div>
             ) : (

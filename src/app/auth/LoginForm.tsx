@@ -1,19 +1,25 @@
 "use client";
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { login, setError, setLoading } from "../redux/sliceses/authSlices";
+import { RootState } from "../redux/store";
 import { loginApi } from "../api";
 
 const LoginForm: React.FC = () => {
   const dispatch = useDispatch();
+  const router = useRouter();
+  const theme = useSelector((state: RootState) => state.theme.theme);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoadingState] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setSuccessMessage(null);
     dispatch(setLoading(true));
     setLoadingState(true);
     try {
@@ -29,6 +35,14 @@ const LoginForm: React.FC = () => {
           role: data.user.role === "admin" ? "admin" : "user",
         })
       );
+      
+      // Başarı mesajı göster
+      setSuccessMessage('Giriş başarılı! Yönlendiriliyorsunuz...');
+      
+      // Kısa bir süre sonra anasayfaya yönlendir
+      setTimeout(() => {
+        router.push('/');
+      }, 1500);
     } catch (err: unknown) {
       let message = "Bir hata oluştu";
       if (typeof err === "object" && err && "message" in err) {
@@ -45,32 +59,104 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-6 bg-white rounded-lg shadow-md space-y-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">Giriş Yap</h2>
-      <div>
-        <label className="block mb-1 font-medium">Kullanıcı Adı veya Email</label>
-        <input
-          type="text"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-          className="w-full border rounded px-3 py-2"
-          required
-        />
-      </div>
-      <div>
-        <label className="block mb-1 font-medium">Şifre</label>
-        <input
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="w-full border rounded px-3 py-2"
-          required
-        />
-      </div>
-      {formError && <div className="text-red-600 text-sm">{formError}</div>}
+    <form onSubmit={handleSubmit} className={`w-full p-6 backdrop-blur-sm rounded-xl shadow-xl space-y-4 border transition-all duration-300 ${
+      theme === 'dark' 
+        ? 'bg-slate-800/90 border-slate-700/50' 
+        : 'bg-white/90 border-gray-200/50'
+    }`}>
+      <h2 className={`text-2xl font-bold mb-4 text-center transition-colors duration-300 ${
+        theme === 'dark' ? 'text-white' : 'text-gray-900'
+      }`}>Giriş Yap</h2>
+              <div>
+          <label className={`block mb-1 font-medium transition-colors duration-300 ${
+            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          }`}>Kullanıcı Adı veya Email</label>
+          <input
+            type="text"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            className={`w-full border rounded-lg px-3 py-2 backdrop-blur-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              theme === 'dark' 
+                ? 'border-slate-600 bg-slate-700/80 text-white placeholder-gray-400 focus:ring-blue-400' 
+                : 'border-gray-300 bg-white/80 text-gray-900 placeholder-gray-500 focus:ring-blue-500'
+            }`}
+            required
+          />
+        </div>
+        <div>
+          <label className={`block mb-1 font-medium transition-colors duration-300 ${
+            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          }`}>Şifre</label>
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className={`w-full border rounded-lg px-3 py-2 backdrop-blur-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+              theme === 'dark' 
+                ? 'border-slate-600 bg-slate-700/80 text-white placeholder-gray-400 focus:ring-blue-400' 
+                : 'border-gray-300 bg-white/80 text-gray-900 placeholder-gray-500 focus:ring-blue-500'
+            }`}
+            required
+          />
+        </div>
+      {formError && (
+        <div className={`border rounded-lg p-4 mb-4 transition-all duration-300 ${
+          theme === 'dark' 
+            ? 'bg-red-900/20 border-red-800' 
+            : 'bg-red-50 border-red-200'
+        }`}>
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className={`h-5 w-5 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-red-300' : 'text-red-400'
+              }`} viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className={`text-sm font-medium transition-colors duration-300 ${
+                theme === 'dark' ? 'text-red-200' : 'text-red-800'
+              }`}>Giriş Hatası</h3>
+              <div className={`mt-1 text-sm transition-colors duration-300 ${
+                theme === 'dark' ? 'text-red-300' : 'text-red-700'
+              }`}>{formError}</div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {successMessage && (
+        <div className={`border rounded-lg p-4 mb-4 transition-all duration-300 ${
+          theme === 'dark' 
+            ? 'bg-green-900/20 border-green-800' 
+            : 'bg-green-50 border-green-200'
+        }`}>
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className={`h-5 w-5 transition-colors duration-300 ${
+                theme === 'dark' ? 'text-green-300' : 'text-green-400'
+              }`} viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className={`text-sm font-medium transition-colors duration-300 ${
+                theme === 'dark' ? 'text-green-200' : 'text-green-800'
+              }`}>Başarılı!</h3>
+              <div className={`mt-1 text-sm transition-colors duration-300 ${
+                theme === 'dark' ? 'text-green-300' : 'text-green-700'
+              }`}>{successMessage}</div>
+            </div>
+          </div>
+        </div>
+      )}
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+        className={`w-full text-white py-3 rounded-lg transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
+          theme === 'dark' 
+            ? 'bg-blue-500 hover:bg-blue-600' 
+            : 'bg-blue-600 hover:bg-blue-700'
+        }`}
         disabled={loading}
       >
         {loading ? "Giriş Yapılıyor..." : "Giriş Yap"}

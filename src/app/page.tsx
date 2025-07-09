@@ -1,6 +1,8 @@
 "use client"
 import './globals.css'
 import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { selectUser, selectIsAdmin } from './redux/sliceses/authSlices';
 import { RootState } from './redux/store';
 import { motion } from 'framer-motion';
@@ -9,7 +11,25 @@ import { motion } from 'framer-motion';
 export default function Home() {
   const user = useSelector(selectUser);
   const isAdmin = useSelector(selectIsAdmin);
+  const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const theme = useSelector((state: RootState) => state.theme.theme);
+  const router = useRouter();
+
+  // Giriş yapmamış kullanıcıları landing page'e yönlendir
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push('/landing');
+    }
+  }, [isLoggedIn, router]);
+
+  // Giriş yapmamış kullanıcılar için loading göster
+  if (!isLoggedIn) {
+    return (
+      <div className="flex-1 min-h-screen w-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   // Mock data for dashboard
   const stats = [

@@ -42,6 +42,7 @@ const AdminPage: React.FC = () => {
                 <div className={`flex flex-wrap sm:flex-nowrap gap-1 backdrop-blur-sm rounded-lg sm:rounded-xl p-1 shadow-lg ${theme === 'dark' ? 'bg-slate-800/80' : 'bg-white/80'}`}>
                     {[
                         { id: 'profile', name: 'Profil', icon: '👤' },
+                        { id: 'users', name: 'Kullanıcılar', icon: '👥' },
                         { id: 'permissions', name: 'Yetkiler', icon: '🔐' },
                         { id: 'activity', name: 'Aktivite', icon: '📊' },
                         { id: 'settings', name: 'Ayarlar', icon: '⚙️' }
@@ -116,6 +117,67 @@ const AdminPage: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'users' && (
+                    <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-white/20'} backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-xl border p-4 sm:p-6`}>
+                        <div className="flex items-center justify-between mb-4 sm:mb-6">
+                            <h3 className={`text-lg sm:text-xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Kullanıcı Yönetimi</h3>
+                            <button className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors ${theme === 'dark' ? 'hover:bg-blue-500' : 'hover:bg-blue-700'}`}>
+                                + Yeni Kullanıcı
+                            </button>
+                        </div>
+                        
+                        {/* Mock Users List */}
+                        <div className="space-y-3">
+                            {[
+                                { id: 1, name: 'Ahmet Yılmaz', email: 'ahmet@ulas.com', role: 'employee', status: 'active', lastLogin: '2024-02-20 10:30' },
+                                { id: 2, name: 'Fatma Demir', email: 'fatma@ulas.com', role: 'employee', status: 'active', lastLogin: '2024-02-19 15:45' },
+                                { id: 3, name: 'Mehmet Kaya', email: 'mehmet@ulas.com', role: 'admin', status: 'active', lastLogin: '2024-02-20 09:15' },
+                                { id: 4, name: 'Ayşe Özkan', email: 'ayse@ulas.com', role: 'employee', status: 'inactive', lastLogin: '2024-02-15 14:20' }
+                            ].map((user) => (
+                                <div key={user.id} className={`border rounded-lg p-4 transition-colors ${theme === 'dark' ? 'border-slate-600 hover:bg-slate-700' : 'border-gray-200 hover:bg-gray-50'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
+                                                user.role === 'admin' ? 'bg-purple-600' : 'bg-blue-600'
+                                            }`}>
+                                                {user.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className={`font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{user.name}</p>
+                                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                user.role === 'admin' 
+                                                    ? theme === 'dark' ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800'
+                                                    : theme === 'dark' ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
+                                            }`}>
+                                                {user.role === 'admin' ? 'Admin' : 'Çalışan'}
+                                            </span>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                user.status === 'active'
+                                                    ? theme === 'dark' ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'
+                                                    : theme === 'dark' ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800'
+                                            }`}>
+                                                {user.status === 'active' ? 'Aktif' : 'Pasif'}
+                                            </span>
+                                            <button className={`p-2 rounded-lg transition-colors ${theme === 'dark' ? 'hover:bg-slate-600' : 'hover:bg-gray-100'}`}>
+                                                <span className="text-gray-400">⋮</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="mt-2">
+                                        <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                            Son giriş: {new Date(user.lastLogin).toLocaleDateString('tr-TR')} {new Date(user.lastLogin).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}

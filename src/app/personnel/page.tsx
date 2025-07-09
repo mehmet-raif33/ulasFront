@@ -1,7 +1,9 @@
 "use client"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { RootState } from "../redux/store";
+import { selectIsLoggedIn } from "../redux/sliceses/authSlices";
 import Link from "next/link";
 import { motion } from 'framer-motion';
 
@@ -85,6 +87,8 @@ const mockPersonnel: Personnel[] = [
 
 const PersonnelPage: React.FC = () => {
   const theme = useSelector((state: RootState) => state.theme.theme);
+  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const router = useRouter();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,6 +102,22 @@ const PersonnelPage: React.FC = () => {
     department: "",
     status: "active",
   });
+
+  // Giriş yapmamış kullanıcıları landing page'e yönlendir
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push('/landing');
+    }
+  }, [isLoggedIn, router]);
+
+  // Giriş yapmamış kullanıcılar için loading göster
+  if (!isLoggedIn) {
+    return (
+      <div className="flex-1 min-h-screen w-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>

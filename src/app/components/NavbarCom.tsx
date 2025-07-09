@@ -8,10 +8,10 @@ import { toggleTheme } from "../redux/sliceses/themeSlice";
 import { logout } from "../redux/sliceses/authSlices";
 
 const NavbarList = [
-    { name: "Gösterge Paneli", href: "/", icon: "📊" },
-    { name: "İşlem Ekle", href: "/add-transaction", icon: "📋" },
-    { name: "Araçlar", href: "/vehicles", icon: "🚗" },
-    { name: "Personeller", href: "/personnel", icon: "👥" }
+    { name: "Gösterge Paneli", href: "/", icon: "📊", requiresAuth: true },
+    { name: "İşlem Ekle", href: "/add-transaction", icon: "📋", requiresAuth: true },
+    { name: "Araçlar", href: "/vehicles", icon: "🚗", requiresAuth: true },
+    { name: "Personeller", href: "/personnel", icon: "👥", requiresAuth: true }
 ]
 
 interface NavbarComProps {
@@ -34,12 +34,15 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
 
     const loggedOut = async () => {
         try {
+            // localStorage'dan token'ı sil
+            localStorage.removeItem('token');
             dispatch(logout()); // Redux state'i temizle
             router.push('/auth');
             setIsOpen(false);
         } catch (error) {
             console.error('Çıkış hatası:', error);
-            // Hata olsa bile Redux state'i temizle
+            // Hata olsa bile localStorage ve Redux state'i temizle
+            localStorage.removeItem('token');
             dispatch(logout());
             router.push('/auth');
         }
@@ -77,7 +80,7 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                             )}
                         </div>
                         <div className="flex flex-col space-y-2 w-full px-2">
-                            {NavbarList.map((item, index) => (
+                            {isLoggedIn && NavbarList.map((item, index) => (
                                 <Link
                                     href={item.href}
                                     className={`text-sm font-medium rounded-lg border flex items-center group transition-all duration-300
@@ -151,37 +154,28 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
             </nav>
 
             {/* Mobile Bottom Navigation */}
-            <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
-                <div className="flex items-center justify-around px-2 py-1">
-                    {NavbarList.map((item, index) => (
-                        <Link
-                            href={item.href}
-                            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-200 text-xs ${theme === 'dark' ? 'hover:bg-slate-800 active:bg-slate-700 text-gray-200' : 'hover:bg-gray-50 active:bg-gray-100 text-gray-700'}`}
-                            key={index}
-                        >
-                            <span className="text-xl mb-0.5">{item.icon}</span>
-                            <span className={`font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>{item.name}</span>
-                        </Link>
-                    ))}
-                    {isLoggedIn ? (
-                        <button
-                            onClick={loggedOut}
-                            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-200 text-xs ${theme === 'dark' ? 'hover:bg-red-900 active:bg-red-800 text-red-300' : 'hover:bg-red-50 active:bg-red-100 text-red-600'}`}
-                        >
-                            <span className="text-xl mb-0.5">🚪</span>
-                            <span className={`font-medium ${theme === 'dark' ? 'text-red-300' : 'text-red-600'}`}>Çıkış</span>
-                        </button>
-                    ) : (
-                        <button
-                            onClick={loggedIn}
-                            className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-200 text-xs ${theme === 'dark' ? 'hover:bg-green-900 active:bg-green-800 text-green-300' : 'hover:bg-green-50 active:bg-green-100 text-green-600'}`}
-                        >
-                            <span className="text-xl mb-0.5">🔓</span>
-                            <span className={`font-medium ${theme === 'dark' ? 'text-green-300' : 'text-green-600'}`}>Giriş</span>
-                        </button>
-                    )}
-                </div>
-            </nav>
+            {isLoggedIn && (
+                <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
+                    <div className="flex items-center justify-around px-2 py-1">
+                        {NavbarList.map((item, index) => (
+                            <Link
+                                href={item.href}
+                                className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-200 text-xs ${
+                                    theme === 'dark' 
+                                        ? 'hover:bg-slate-800 active:bg-slate-700 text-gray-200'
+                                        : 'hover:bg-gray-50 active:bg-gray-100 text-gray-700'
+                                }`}
+                                key={index}
+                            >
+                                <span className="text-xl mb-0.5">{item.icon}</span>
+                                <span className={`font-medium ${
+                                    theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                                }`}>{item.name}</span>
+                            </Link>
+                        ))}
+                    </div>
+                </nav>
+            )}
 
             {/* Mobile Header */}
             <div className={`lg:hidden fixed top-0 left-0 right-0 z-40 px-3 py-2 shadow-sm border-b ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>

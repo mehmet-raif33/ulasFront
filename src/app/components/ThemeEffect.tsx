@@ -7,23 +7,38 @@ import { setTheme, toggleTheme } from "../redux/sliceses/themeSlice";
 export default function ThemeEffect() {
   const theme = useSelector((state: RootState) => state.theme.theme);
   const dispatch = useDispatch();
+  const [mounted, setMounted] = useState(false);
+
+  // Hydration sonrası mounted state'ini true yap
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // İlk açılışta localStorage'dan temayı Redux'a yükle
   useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    if (stored === "dark" || stored === "light") {
-      dispatch(setTheme(stored));
+    if (typeof window !== 'undefined' && mounted) {
+      const stored = localStorage.getItem("theme");
+      if (stored === "dark" || stored === "light") {
+        dispatch(setTheme(stored));
+      } else {
+        // Sistem temasını kontrol et
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        dispatch(setTheme(prefersDark ? "dark" : "light"));
+      }
     }
-  }, [dispatch]);
+  }, [dispatch, mounted]);
 
+  // Tema değiştiğinde DOM'a uygula
   useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
+    if (mounted) {
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
     }
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  }, [theme, mounted]);
+
   return null;
 }
 
