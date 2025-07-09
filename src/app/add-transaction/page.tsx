@@ -106,14 +106,23 @@ const AddTransactionPage: React.FC = () => {
         }
     }, [isLoggedIn, router]);
 
-    // Giriş yapmamış kullanıcılar için loading göster
-    if (!isLoggedIn) {
-        return (
-            <div className="flex-1 min-h-screen w-full flex items-center justify-center">
-                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
+    // Load vehicles and personnel on component mount
+    useEffect(() => {
+        if (isLoggedIn) {
+            const loadData = async () => {
+                try {
+                    // Simulate API call
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    setVehicles(mockVehicles);
+                    setPersonnel(mockPersonnel);
+                } catch (error: unknown) {
+                    console.error('Error loading data:', error);
+                    setError('Veriler yüklenirken hata oluştu');
+                }
+            };
+            loadData();
+        }
+    }, [isLoggedIn]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({
@@ -122,21 +131,14 @@ const AddTransactionPage: React.FC = () => {
         });
     };
 
-    // Load vehicles and personnel on component mount
-    useEffect(() => {
-        const loadData = async () => {
-            try {
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 500));
-                setVehicles(mockVehicles);
-                setPersonnel(mockPersonnel);
-            } catch (error: unknown) {
-                console.error('Error loading data:', error);
-                setError('Veriler yüklenirken hata oluştu');
-            }
-        };
-        loadData();
-    }, []);
+    // Giriş yapmamış kullanıcılar için loading göster
+    if (!isLoggedIn) {
+        return (
+            <div className="flex-1 min-h-screen w-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

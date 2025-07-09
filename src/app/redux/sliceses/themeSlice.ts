@@ -14,7 +14,7 @@ const getInitialTheme = (): "light" | "dark" => {
   try {
     const savedTheme = localStorage.getItem('theme');
     return (savedTheme as "light" | "dark") || "light";
-  } catch (error) {
+  } catch {
     return "light";
   }
 };

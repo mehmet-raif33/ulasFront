@@ -82,14 +82,22 @@ const VehiclesPage: React.FC = () => {
         }
     }, [isLoggedIn, router]);
 
-    // Giriş yapmamış kullanıcılar için loading göster
-    if (!isLoggedIn) {
-        return (
-            <div className="flex-1 min-h-screen w-full flex items-center justify-center">
-                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
+    // Load vehicles on component mount
+    useEffect(() => {
+        if (isLoggedIn) {
+            const loadVehicles = async () => {
+                try {
+                    // Simulate API call
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    setVehicles(mockVehicles);
+                } catch (error: unknown) {
+                    console.error('Error loading vehicles:', error);
+                    setError('Araçlar yüklenirken hata oluştu');
+                }
+            };
+            loadVehicles();
+        }
+    }, [isLoggedIn]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({
@@ -98,20 +106,14 @@ const VehiclesPage: React.FC = () => {
         });
     };
 
-    // Load vehicles on component mount
-    useEffect(() => {
-        const loadVehicles = async () => {
-            try {
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 500));
-                setVehicles(mockVehicles);
-            } catch (error: unknown) {
-                console.error('Error loading vehicles:', error);
-                setError('Araçlar yüklenirken hata oluştu');
-            }
-        };
-        loadVehicles();
-    }, []);
+    // Giriş yapmamış kullanıcılar için loading göster
+    if (!isLoggedIn) {
+        return (
+            <div className="flex-1 min-h-screen w-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

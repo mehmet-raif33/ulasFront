@@ -3,10 +3,10 @@ let API_BASE_URL = '';
 // Environment variables'dan API URL'ini al
 if (process.env.NODE_ENV === 'production') {
   // Production ortamında Railway server'ını kullan
-  API_BASE_URL = process.env.SERVER_API1 || '';
+  API_BASE_URL = process.env.SERVER_API1 || 'https://ulasserver-production.up.railway.app';
 } else {
   // Development ortamında local server'ı kullan
-  API_BASE_URL = process.env.SERVER_API || '';
+  API_BASE_URL = process.env.SERVER_API || 'http://localhost:5000';
 }
 
 // Fallback için güvenlik kontrolü
@@ -48,7 +48,7 @@ export async function registerApi({ username, email, password, role }: { usernam
     try {
       const error = JSON.parse(errorText);
       throw new Error(error.message || 'Kayıt başarısız');
-    } catch (e) {
+    } catch {
       throw new Error(`HTTP ${res.status}: ${errorText}`);
     }
   }
