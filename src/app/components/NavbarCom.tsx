@@ -1,5 +1,5 @@
 'use client'
-import React, { Dispatch, SetStateAction } from "react";
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
@@ -16,13 +16,14 @@ const NavbarList = [
 
 interface NavbarComProps {
     isOpen: boolean;
-    setIsOpen: Dispatch<SetStateAction<boolean>>;
+    setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
     const router = useRouter();
     const theme = useSelector((state: RootState) => state.theme.theme);
     const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
+    const user = useSelector((state: RootState) => state.auth.user);
     const dispatch = useDispatch();
 
     const toggleSidebar = () => setIsOpen((prev) => !prev);
@@ -99,6 +100,36 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                                     )}
                                 </Link>
                             ))}
+                            {/* Rol bazlı butonlar (sadece giriş yapıldıysa) */}
+                            {isLoggedIn && isOpen && (
+                                <div className="flex flex-col space-y-2 mt-2">
+                                    {user?.role === 'admin' && (
+                                        <Link
+                                            href="/auth/adminPage"
+                                            className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                                ${theme === 'dark'
+                                                    ? 'text-white bg-gradient-to-r from-blue-700 to-purple-800 border-blue-700 hover:from-blue-800 hover:to-purple-900 hover:border-blue-800 hover:shadow-lg'
+                                                    : 'text-white bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 hover:from-blue-600 hover:to-purple-700 hover:border-blue-500 hover:shadow-lg'}
+                                                transform hover:scale-105 active:scale-95 w-full p-2`}
+                                        >
+                                            <span className="text-lg mr-2">👤</span> Admin
+                                        </Link>
+                                    )}
+                                    {user?.role === 'user' && (
+                                        <Link
+                                            href="/auth/userPage"
+                                            className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                                ${theme === 'dark'
+                                                    ? 'text-white bg-gradient-to-r from-green-700 to-green-800 border-green-700 hover:from-green-800 hover:to-green-900 hover:border-green-800 hover:shadow-lg'
+                                                    : 'text-white bg-gradient-to-r from-green-500 to-green-600 border-green-400 hover:from-green-600 hover:to-green-700 hover:border-green-500 hover:shadow-lg'}
+                                                transform hover:scale-105 active:scale-95 w-full p-2`}
+                                        >
+                                            <span className="text-lg mr-2">👨‍💼</span> Kullanıcı
+                                        </Link>
+                                    )}
+                                </div>
+                            )}
+                            {/* Çıkış/Giriş butonları */}
                             {isLoggedIn ? (
                                 isOpen ? (
                                     <button
@@ -190,20 +221,24 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                         >
                             <span className="text-lg">{theme === 'dark' ? '☀️' : '🌙'}</span>
                         </button>
-                        <Link
-                            href="/auth/adminPage"
-                            className={`flex items-center space-x-1 p-2 rounded-lg transition-all duration-200 ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}
-                        >
-                            <span className="text-lg">👤</span>
-                            <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Admin</span>
-                        </Link>
-                        <Link
-                            href="/auth/userPage"
-                            className={`flex items-center space-x-1 p-2 rounded-lg transition-all duration-200 ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}
-                        >
-                            <span className="text-lg">👨‍💼</span>
-                            <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Kullanıcı</span>
-                        </Link>
+                        {isLoggedIn && user?.role === 'admin' && (
+                            <Link
+                                href="/auth/adminPage"
+                                className={`flex items-center space-x-1 p-2 rounded-lg transition-all duration-200 ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}
+                            >
+                                <span className="text-lg">👤</span>
+                                <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Admin</span>
+                            </Link>
+                        )}
+                        {isLoggedIn && user?.role === 'user' && (
+                            <Link
+                                href="/auth/userPage"
+                                className={`flex items-center space-x-1 p-2 rounded-lg transition-all duration-200 ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}
+                            >
+                                <span className="text-lg">👨‍💼</span>
+                                <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>Kullanıcı</span>
+                            </Link>
+                        )}
                     </div>
                 </div>
             </div>

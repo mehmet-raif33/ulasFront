@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css"; 
-import ReduxProvider from "./components/ReduxProvider";
-import ThemeEffect from "./components/ThemeEffect";
-import ClientLayout from "./components/ClientLayout";
-import AuthInitializer from "./components/AuthInitializer";
+import AppLayoutClient from "./AppLayoutClient";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,12 +25,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} flex`} suppressHydrationWarning>
-        <ReduxProvider>
-          <AuthInitializer />
-          <ThemeEffect />
-          <ClientLayout>{children}</ClientLayout>
-        </ReduxProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} bg-white dark:bg-slate-900`} suppressHydrationWarning>
+        <AppLayoutClient>{children}</AppLayoutClient>
       </body>
     </html>
   );

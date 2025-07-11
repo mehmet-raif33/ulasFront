@@ -11,7 +11,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     setMounted(true);
   }, []);
   
-  // Hydration sırasında hiçbir şey render etme
   if (!mounted) {
     return (
       <div className="flex-1 min-h-screen w-full flex items-center justify-center">
@@ -23,8 +22,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <>
       <NavbarCom isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      {/* Sidebar açıkken arka planı karartan overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black bg-opacity-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       <ThemeFAB />
-      <main className={`flex-1 transition-all duration-300 min-h-screen w-full pt-14 pb-14 lg:pt-0 lg:pb-0 relative ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-[72px]'}`}>
+      <main className={`flex-1 w-full transition-all duration-300 ml-0 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-[72px]'}`}>
         {children}
       </main>
     </>

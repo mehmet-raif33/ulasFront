@@ -33,43 +33,13 @@ const LandingPage = () => {
 
 
   return (
-    <div className={`min-h-screen transition-all duration-300 ${
+    <div className={`min-h-screen transition-all duration-300 pt-14 lg:pt-0 ${
       theme === 'dark' 
         ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950' 
         : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-indigo-100'
     }`}>
-      {/* Header */}
-      <header className={`border-b transition-all duration-300 ${
-        theme === 'dark' ? 'border-slate-700 bg-slate-900/50' : 'border-gray-200 bg-white/50'
-      } backdrop-blur-sm`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl">🚗</span>
-              <h1 className={`text-2xl font-bold transition-colors duration-300 ${
-                theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`}>
-                Ulas Tech
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/auth"
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  theme === 'dark'
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-              >
-                Giriş Yap
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <section className="py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden flex-1">
         {/* Animated Background */}
         <div className="absolute inset-0">
           <div className={`absolute inset-0 opacity-10 ${
@@ -90,7 +60,7 @@ const LandingPage = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto text-center relative z-10">
+        <div className="text-center relative z-10">
           {/* Badge */}
           <div className="inline-flex items-center px-4 py-2 rounded-full mb-8 backdrop-blur-sm border ${
             theme === 'dark' 
@@ -144,11 +114,9 @@ const LandingPage = () => {
         </div>
       </section>
 
-
-
       {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 relative">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-12 px-4 sm:px-6 lg:px-8 relative">
+        <div>
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-4 py-2 rounded-full mb-4 backdrop-blur-sm border ${
               theme === 'dark' 
@@ -215,7 +183,7 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <section className="py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0">
           <div className={`absolute inset-0 opacity-5 ${
@@ -287,7 +255,6 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className={`border-t transition-all duration-300 ${
         theme === 'dark' ? 'border-slate-700 bg-slate-900/50' : 'border-gray-200 bg-white/50'
