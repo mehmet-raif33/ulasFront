@@ -7,7 +7,7 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   // Development ortamında local server'ı kullan
   API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API || 'http://localhost:5000';
-}
+} 
 
 // Fallback için güvenlik kontrolü
 if (!API_BASE_URL) {
