@@ -17,7 +17,7 @@ const AuthPage = () => {
             Ulas Tech
           </h1>
           <p className={`transition-colors duration-300 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-            Araç Filo Yönetim Sistemi
+            Araç Filo Yönetim Sistemi 
           </p>
         </div>
         <LoginForm />
