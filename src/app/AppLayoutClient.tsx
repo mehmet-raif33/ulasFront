@@ -13,7 +13,7 @@ export default function AppLayoutClient({ children }: { children: React.ReactNod
       <ThemeEffect />
       <div className="flex min-h-screen">
         <NavbarCom isOpen={isOpen} setIsOpen={setIsOpen} />
-        <main className={`flex-1 w-full ml-0 ${isOpen ? 'lg:ml-64' : 'lg:ml-[72px]'}`}>
+        <main className={`flex-1 w-full ml-0 ${isOpen ? 'lg:ml-64' : 'lg:ml-[72px]'} lg:pt-0 pt-16 pb-20`}>
           {children}
         </main>
       </div>

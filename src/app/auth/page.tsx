@@ -20,10 +20,12 @@ const AuthPage = () => {
             Araç Filo Yönetim Sistemi 
           </p>
         </div>
+        
         <LoginForm />
+        
         <div className="text-center mt-6">
           <p className={`text-sm transition-colors duration-300 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-            Hesabınız yok mu? Lütfen sistem yöneticinizle iletişime geçin.
+            Sisteme erişim için yöneticinizle iletişime geçin.
           </p>
         </div>
       </div>

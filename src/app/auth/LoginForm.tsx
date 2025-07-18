@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { login, setError, setLoading } from "../redux/sliceses/authSlices";
 import { RootState } from "../redux/store";
 import { loginApi } from "../api";
+import { broadcastLogin } from "../utils/broadcastChannel";
 
 const LoginForm: React.FC = () => {
   const dispatch = useDispatch();
@@ -27,14 +28,16 @@ const LoginForm: React.FC = () => {
       // Token'ı localStorage'a kaydet
       localStorage.setItem("token", data.token);
       // Kullanıcı bilgisini Redux'a kaydet
-      dispatch(
-        login({
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.username || data.user.name || "",
-          role: data.user.role === "admin" ? "admin" : "user",
-        })
-      );
+      const userData = {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.username || data.user.name || "",
+        role: data.user.role === "admin" ? "admin" : "user" as "admin" | "user",
+      };
+      dispatch(login(userData));
+      
+      // Diğer sekmelere login mesajı gönder
+      broadcastLogin(userData);
       
       // Başarı mesajı göster
       setSuccessMessage('Giriş başarılı! Yönlendiriliyorsunuz...');

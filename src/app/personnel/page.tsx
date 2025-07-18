@@ -3,18 +3,25 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { RootState } from "../redux/store";
-import { selectIsLoggedIn } from "../redux/sliceses/authSlices";
+import { selectIsLoggedIn, selectUser } from "../redux/sliceses/authSlices";
 import Link from "next/link";
 import { motion } from 'framer-motion';
+import { getPersonnelApi, createPersonnelApi } from '../api';
 
+// Personnel interface matching backend schema
 interface Personnel {
   id: string;
-  name: string;
+  full_name: string;
+  username?: string;
   email: string;
   phone: string;
-  department: string;
-  position: string;
-  status: 'active' | 'inactive';
+  hire_date: string;
+  status: string;
+  notes?: string;
+  is_active: boolean;
+  role?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const statCards = [
@@ -25,21 +32,33 @@ const statCards = [
     color: "bg-blue-500",
   },
   {
-    label: "Aktif Personel",
+    label: "Aktif Durumda",
     icon: "✅",
     getValue: (list: Personnel[]) => list.filter((p) => p.status === "active").length,
     color: "bg-green-500",
   },
   {
-    label: "Sürücüler",
-    icon: "🚗",
-    getValue: (list: Personnel[]) => list.filter((p) => p.position === "driver").length,
+    label: "Aktif Kayıt",
+    icon: "👥",
+    getValue: (list: Personnel[]) => list.filter((p) => p.is_active).length,
     color: "bg-purple-500",
   },
   {
     label: "Yeni Bu Ay",
     icon: "🆕",
-    getValue: () => 2,
+    getValue: (list: Personnel[]) => {
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      return list.filter((p) => {
+        if (!p.hire_date) return false;
+        try {
+          const hireDate = new Date(p.hire_date);
+          return hireDate.getMonth() === currentMonth && hireDate.getFullYear() === currentYear;
+        } catch {
+          return false;
+        }
+      }).length;
+    },
     color: "bg-yellow-500",
   },
 ];
@@ -55,52 +74,26 @@ function getStatusColor(status: string, theme: string) {
     : "bg-red-100 text-red-800";
 }
 
-const mockPersonnel: Personnel[] = [
-  {
-    id: '1',
-    name: 'Zeynep Aksoy',
-    email: 'zeynep.aksoy@ulas.com',
-    phone: '0555 111 2233',
-    department: 'Finans',
-    position: 'Uzman',
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'Emre Kılıç',
-    email: 'emre.kilic@ulas.com',
-    phone: '0554 222 3344',
-    department: 'Operasyon',
-    position: 'Yönetici',
-    status: 'active',
-  },
-  {
-    id: '3',
-    name: 'Selin Yıldız',
-    email: 'selin.yildiz@ulas.com',
-    phone: '0553 333 4455',
-    department: 'Lojistik',
-    position: 'Sürücü',
-    status: 'inactive',
-  },
-];
-
 const PersonnelPage: React.FC = () => {
   const theme = useSelector((state: RootState) => state.theme.theme);
   const isLoggedIn = useSelector(selectIsLoggedIn);
+  const user = useSelector(selectUser);
   const router = useRouter();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [personnel, setPersonnel] = useState<Personnel[]>(mockPersonnel);
+  const [personnel, setPersonnel] = useState<Personnel[]>([]);
   const [formData, setFormData] = useState({
-    name: "",
+    full_name: "",
+    username: "",
     email: "",
     phone: "",
-    position: "",
-    department: "",
+    hire_date: "",
     status: "active",
+    notes: "",
+    password: "",
+    role: "personnel"
   });
 
   // Giriş yapmamış kullanıcıları landing page'e yönlendir
@@ -109,6 +102,38 @@ const PersonnelPage: React.FC = () => {
       router.push('/landing');
     }
   }, [isLoggedIn, router]);
+
+  // Admin olmayan kullanıcıları ana sayfaya yönlendir
+  useEffect(() => {
+    if (isLoggedIn && user?.role !== 'admin') {
+      router.push('/');
+    }
+  }, [isLoggedIn, user, router]);
+
+  // Load personnel on component mount
+  useEffect(() => {
+    if (isLoggedIn) {
+      const loadPersonnel = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            setError('Token bulunamadı');
+            return;
+          }
+          
+          setLoading(true);
+          const response = await getPersonnelApi(token);
+          setPersonnel(response.data || []);
+        } catch (error: unknown) {
+          console.error('Error loading personnel:', error);
+          setError('Personel listesi yüklenirken hata oluştu');
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadPersonnel();
+    }
+  }, [isLoggedIn]);
 
   // Giriş yapmamış kullanıcılar için loading göster
   if (!isLoggedIn) {
@@ -119,17 +144,27 @@ const PersonnelPage: React.FC = () => {
     );
   }
 
+  // Admin olmayan kullanıcılar için loading göster (yönlendirme sırasında)
+  if (isLoggedIn && user?.role !== 'admin') {
+    return (
+      <div className="flex-1 min-h-screen w-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const filteredPersonnel = personnel.filter(
     (person) =>
-      person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      person.position.toLowerCase().includes(searchTerm.toLowerCase())
+      (person.full_name && person.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (person.username && person.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (person.email && person.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (person.phone && person.phone.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,21 +173,67 @@ const PersonnelPage: React.FC = () => {
     setError(null);
 
     try {
-      // personnelUtils.createPersonnel(newPersonnelData);
+      // Form validation
+      if (!formData.full_name.trim()) {
+        setError('Ad Soyad alanı zorunludur');
+        return;
+      }
+      
+      if (!formData.email.trim()) {
+        setError('E-posta alanı zorunludur');
+        return;
+      }
+      
+      if (!formData.phone.trim()) {
+        setError('Telefon alanı zorunludur');
+        return;
+      }
+      
+      if (!formData.hire_date) {
+        setError('İşe başlama tarihi zorunludur');
+        return;
+      }
+      
+      if (formData.username && formData.password && formData.password.length < 6) {
+        setError('Şifre en az 6 karakter olmalı');
+        return;
+      }
+
+      const personnelData = {
+        full_name: formData.full_name.trim(),
+        username: formData.username.trim() || undefined,
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        hire_date: formData.hire_date,
+        status: formData.status,
+        notes: formData.notes.trim(),
+        password: formData.password || undefined,
+        role: formData.role
+      };
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Token bulunamadı');
+      }
+
+      const response = await createPersonnelApi(token, personnelData);
+      
+      // Add to local state
+      setPersonnel(prev => [...prev, response.data]);
+      
       alert("Personel başarıyla eklendi!");
       setShowAddForm(false);
       
-      // Reload personnel
-      // const updatedPersonnelData = await personnelUtils.getAllPersonnel();
-      setPersonnel(mockPersonnel);
-      
       setFormData({
-        name: "",
+        full_name: "",
+        username: "",
         email: "",
         phone: "",
-        position: "",
-        department: "",
+        hire_date: "",
         status: "active",
+        notes: "",
+        password: "",
+        role: "personnel"
       });
     } catch (error: unknown) {
       console.error('Error creating personnel:', error);
@@ -203,355 +284,372 @@ const PersonnelPage: React.FC = () => {
         {statCards.map((card, index) => (
           <motion.div
             key={card.label}
-            className={`flex items-center gap-4 rounded-xl p-4 sm:p-8 shadow-sm border ${
-              theme === "dark"
-                ? "bg-slate-800 border-slate-700"
-                : "bg-white border-gray-200"
+            className={`rounded-xl shadow-sm border p-4 sm:p-6 ${
+              theme === "dark" ? "bg-slate-800 border-slate-700" : "bg-white border-gray-200"
             }`}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.25, delay: 0.2 + (index * 0.05) }}
+            transition={{ duration: 0.25, delay: 0.1 * (index + 1) }}
           >
-            <div
-              className={`w-10 h-10 sm:w-12 sm:h-12 ${card.color} text-white rounded-lg flex items-center justify-center text-xl sm:text-2xl`}
-            >
-              {card.icon}
-            </div>
-            <div>
-              <div
-                className={`text-xs sm:text-sm font-medium ${
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-xs sm:text-sm font-medium mb-1 ${
                   theme === "dark" ? "text-gray-300" : "text-gray-600"
-                }`}
-              >
-                {card.label}
-              </div>
-              <div
-                className={`text-lg sm:text-2xl font-bold ${
+                }`}>
+                  {card.label}
+                </p>
+                <p className={`text-lg sm:text-2xl font-bold ${
                   theme === "dark" ? "text-gray-100" : "text-gray-800"
-                }`}
-              >
-                {card.getValue(filteredPersonnel)}
+                }`}>
+                  {card.getValue(personnel)}
+                </p>
+              </div>
+              <div className={`w-8 h-8 sm:w-12 sm:h-12 ${card.color} text-white rounded-lg flex items-center justify-center text-sm sm:text-2xl`}>
+                {card.icon}
               </div>
             </div>
           </motion.div>
         ))}
       </motion.div>
 
-      {/* Search & Add */}
+      {/* Search and Add Button */}
       <motion.div 
-        className="flex gap-3 mb-6"
+        className="flex flex-col sm:flex-row gap-4 mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.4 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
       >
-        <input
-          type="text"
-          placeholder="Personel ara..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className={`flex-1 px-3 py-2 sm:px-4 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
-            theme === "dark"
-              ? "bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500"
-              : "bg-slate-50 border-gray-300 text-gray-900 placeholder-gray-400"
-          }`}
-        />
-        <button
-          onClick={() => setShowAddForm(true)}
-          className={`px-3 py-2 sm:px-4 sm:py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center text-lg sm:text-xl ${
-            theme === "dark" 
-              ? "bg-slate-800 text-white" 
-              : "bg-blue-600 text-white hover:bg-blue-700"
-          }`}
-          title="Yeni Personel Ekle"
-        >
-          ➕
-        </button>
+        <div className="flex-1">
+          <input
+            type="text"
+            placeholder="Personel ara..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              theme === "dark"
+                ? "bg-slate-800 border-slate-600 text-gray-100 placeholder-gray-400"
+                : "bg-white border-gray-300 text-gray-800 placeholder-gray-500"
+            }`}
+          />
+          {searchTerm && (
+            <p className={`text-sm mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              {filteredPersonnel.length} personel bulundu
+            </p>
+          )}
+        </div>
+        {user?.role === 'admin' && (
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            + Personel Ekle
+          </button>
+        )}
       </motion.div>
 
+      {/* Error Message */}
+      {error && (
+        <motion.div 
+          className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {error}
+        </motion.div>
+      )}
+
+      {/* Loading State */}
+      {loading && personnel.length === 0 && (
+        <motion.div 
+          className="flex items-center justify-center py-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </motion.div>
+      )}
+
+      {/* Add Personnel Form */}
+      {showAddForm && (
+        <motion.div 
+          className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div 
+            className={`w-full max-w-2xl rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Yeni Personel Ekle</h2>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Ad Soyad *</label>
+                  <input
+                    type="text"
+                    name="full_name"
+                    value={formData.full_name}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="Ahmet Yılmaz"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Kullanıcı Adı</label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="ahmet.yilmaz"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">E-posta *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="ahmet.yilmaz@ulas.com"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Telefon *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="0555 123 4567"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Şifre</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="En az 6 karakter"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Rol</label>
+                  <select
+                    name="role"
+                    value={formData.role}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  >
+                    <option value="employee">Çalışan</option>
+                    <option value="admin">Yönetici</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">İşe Başlama Tarihi *</label>
+                  <input
+                    type="date"
+                    name="hire_date"
+                    value={formData.hire_date}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  />
+                </div>
+                
+
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Durum</label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  >
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Pasif</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Notlar</label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    theme === 'dark' 
+                      ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                      : 'bg-white border-gray-300 text-gray-800'
+                  }`}
+                  placeholder="Personel hakkında ek bilgiler..."
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Ekleniyor...' : 'Ekle'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+
       {/* Personnel List */}
-      {/* Mobile: Cards, Desktop: Table */}
       <motion.div 
-        className="block sm:hidden space-y-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.5 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
       >
-        {filteredPersonnel.length === 0 && (
-          <div className={`text-center py-8 ${
-            theme === "dark" ? "text-gray-500" : "text-gray-400"
-          }`}>Kayıt bulunamadı.</div>
-        )}
         {filteredPersonnel.map((person, index) => (
           <motion.div
             key={person.id}
-            initial={{ opacity: 0, y: 30 }}
+            className={`rounded-xl shadow-sm border p-6 cursor-pointer hover:shadow-md transition-shadow ${
+              theme === "dark" ? "bg-slate-800 border-slate-700 hover:border-slate-600" : "bg-white border-gray-200 hover:border-gray-300"
+            }`}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.6 + (index * 0.05) }}
+            transition={{ duration: 0.3, delay: 0.1 * index }}
+            whileHover={{ y: -2 }}
           >
-            <Link
-              href={`/auth/userPage?id=${person.id}&name=${encodeURIComponent(person.name)}&email=${encodeURIComponent(person.email)}&role=${encodeURIComponent(person.position)}&department=${encodeURIComponent(person.department)}&phone=${encodeURIComponent(person.phone)}&status=${person.status}`}
-              className={`rounded-xl p-5 shadow-sm border flex flex-col gap-3 transition-all duration-200 hover:shadow-md hover:scale-[1.02] cursor-pointer ${
-                theme === "dark"
-                  ? "bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600"
-                  : "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  theme === "dark" 
-                    ? "bg-blue-900" 
-                    : "bg-blue-100"
-                }`}>
-                  <span className={`font-semibold text-lg ${
-                    theme === "dark" 
-                      ? "text-blue-200" 
-                      : "text-blue-600"
-                  }`}>
-                    {person.name.charAt(0)}
-                  </span>
-                </div>
-                <div>
-                  <div
-                    className={`text-base font-medium ${
-                      theme === "dark" ? "text-gray-100" : "text-gray-800"
-                    }`}
-                  >
-                    {person.name}
-                  </div>
-                  <div
-                    className={`text-xs ${
-                      theme === "dark" ? "text-gray-300" : "text-gray-500"
-                    }`}
-                  >
-                    {person.email}
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className={`font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>Pozisyon:</span> 
-                <span className={theme === "dark" ? "text-gray-100" : "text-gray-800"}>{person.position}</span>
-                <span className={`font-medium ml-2 ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>Departman:</span> 
-                <span className={theme === "dark" ? "text-gray-100" : "text-gray-800"}>{person.department}</span>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className={`font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-600"}`}>Telefon:</span> 
-                <span className={theme === "dark" ? "text-gray-100" : "text-gray-800"}>{person.phone}</span>
-              </div>
-              <div className="flex items-center justify-between pt-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(person.status, theme)}`}>
-                  {person.status === "active" ? "Aktif" : "Pasif"}
+            <Link href={`/personnel/${person.id}`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-lg font-semibold ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>
+                  {person.full_name || 'İsimsiz'}
+                </h3>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(person.status || 'inactive', theme)}`}>
+                  {person.status === 'active' ? 'Aktif' : 'Pasif'}
                 </span>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={(e) => e.stopPropagation()}
-                    className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors ${theme === "dark" ? "bg-blue-900 text-blue-200 hover:bg-blue-800" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}
-                  >
-                    Düzenle
-                  </button>
-                  <button 
-                    onClick={(e) => e.stopPropagation()}
-                    className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors ${theme === "dark" ? "bg-red-900 text-red-200 hover:bg-red-800" : "bg-red-100 text-red-700 hover:bg-red-200"}`}
-                  >
-                    Sil
-                  </button>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>E-posta:</span>
+                  <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.email || 'Belirtilmemiş'}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Telefon:</span>
+                  <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.phone || 'Belirtilmemiş'}</span>
+                </div>
+                {person.username && (
+                  <div className="flex justify-between">
+                    <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Kullanıcı Adı:</span>
+                    <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.username}</span>
+                  </div>
+                )}
+                {person.role && (
+                  <div className="flex justify-between">
+                    <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Rol:</span>
+                    <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.role === 'admin' ? 'Yönetici' : 'Personel'}</span>
+                  </div>
+                )}
               </div>
             </Link>
           </motion.div>
         ))}
       </motion.div>
 
-      {/* Desktop Table */}
-      <motion.div 
-        className="hidden sm:block overflow-x-auto rounded-xl"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3, delay: 0.6 }}
-      >
-        <table className={`min-w-[700px] w-full text-sm ${theme === "dark" ? "bg-slate-800" : "bg-slate-50"}`}>
-          <thead className={`sticky top-0 z-10 ${theme === "dark" ? "bg-slate-800" : "bg-gray-50"}`}>
-            <tr>
-              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
-                theme === "dark" ? "text-gray-300" : "text-gray-500"
-              }`}>Personel</th>
-              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
-                theme === "dark" ? "text-gray-300" : "text-gray-500"
-              }`}>Pozisyon</th>
-              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
-                theme === "dark" ? "text-gray-300" : "text-gray-500"
-              }`}>Departman</th>
-              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
-                theme === "dark" ? "text-gray-300" : "text-gray-500"
-              }`}>İletişim</th>
-              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
-                theme === "dark" ? "text-gray-300" : "text-gray-500"
-              }`}>Durum</th>
-              <th className={`px-6 py-3 text-left font-medium uppercase tracking-wider ${
-                theme === "dark" ? "text-gray-300" : "text-gray-500"
-              }`}>İşlemler</th>
-            </tr>
-          </thead>
-          <tbody className={`divide-y ${theme === "dark" ? "divide-slate-700" : "divide-gray-200"}`}>
-            {filteredPersonnel.length === 0 && (
-              <tr>
-                <td colSpan={6} className={`text-center py-8 ${
-                  theme === "dark" ? "text-gray-500" : "text-gray-400"
-                }`}>Kayıt bulunamadı.</td>
-              </tr>
-            )}
-            {filteredPersonnel.map((person, index) => (
-              <motion.tr 
-                key={person.id} 
-                className={`hover:${theme === "dark" ? "bg-slate-700" : "bg-gray-100"} transition-colors`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: 0.6 + (index * 0.05) }}
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <Link
-                    href={`/auth/userPage?id=${person.id}&name=${encodeURIComponent(person.name)}&email=${encodeURIComponent(person.email)}&role=${encodeURIComponent(person.position)}&department=${encodeURIComponent(person.department)}&phone=${encodeURIComponent(person.phone)}&status=${person.status}`}
-                    className="block hover:bg-opacity-50 transition-all duration-200"
-                  >
-                    <div className="flex items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        theme === "dark" 
-                          ? "bg-blue-900" 
-                          : "bg-blue-100"
-                      }`}>
-                        <span className={`font-semibold ${
-                          theme === "dark" 
-                            ? "text-blue-200" 
-                            : "text-blue-600"
-                        }`}>
-                          {person.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="ml-4">
-                        <div className={`font-medium ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>{person.name}</div>
-                        <div className={`text-xs ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}>{person.email}</div>
-                      </div>
-                    </div>
-                  </Link>
-                </td>
+      {/* Empty State */}
+      {filteredPersonnel.length === 0 && personnel.length > 0 && (
+        <motion.div 
+          className="text-center py-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="text-6xl mb-4">🔍</div>
+          <h3 className={`text-xl font-semibold mb-2 ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>
+            Personel Bulunamadı
+          </h3>
+          <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
+            &quot;{searchTerm}&quot; ile eşleşen personel bulunamadı.
+          </p>
+        </motion.div>
+      )}
 
-                <td className={`px-6 py-4 whitespace-nowrap ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>{person.position}</td>
-                <td className={`px-6 py-4 whitespace-nowrap ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>{person.department}</td>
-                <td className={`px-6 py-4 whitespace-nowrap ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>{person.phone}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(person.status, theme)}`}>
-                    {person.status === "active" ? "Aktif" : "Pasif"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <button 
-                    onClick={(e) => e.stopPropagation()}
-                    className={`mr-3 text-xs font-medium px-3 py-1 rounded-lg transition-colors ${theme === "dark" ? "bg-blue-900 text-blue-200 hover:bg-blue-800" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}
-                  >
-                    Düzenle
-                  </button>
-                  <button 
-                    onClick={(e) => e.stopPropagation()}
-                    className={`text-xs font-medium px-3 py-1 rounded-lg transition-colors ${theme === "dark" ? "bg-red-900 text-red-200 hover:bg-red-800" : "bg-red-100 text-red-700 hover:bg-red-200"}`}
-                  >
-                    Sil
-                  </button>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-      </motion.div>
-
-      {/* Add Personnel Modal */}
-      {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className={`w-full max-w-md rounded-xl shadow-lg p-4 sm:p-6 ${theme === "dark" ? "bg-slate-800" : "bg-white"}`}>
-            <h2 className={`text-lg sm:text-xl font-semibold mb-4 ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>Yeni Personel Ekle</h2>
-            
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                {error}
-              </div>
-            )}
-            
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-200" : "text-gray-700"}`}>Ad Soyad *</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${theme === "dark" ? "bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500" : "bg-slate-50 border-gray-300 text-gray-900 placeholder-gray-400"}`}
-                  required
-                />
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-200" : "text-gray-700"}`}>E-posta *</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${theme === "dark" ? "bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500" : "bg-slate-50 border-gray-300 text-gray-900 placeholder-gray-400"}`}
-                  required
-                />
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-200" : "text-gray-700"}`}>Telefon *</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${theme === "dark" ? "bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500" : "bg-slate-50 border-gray-300 text-gray-900 placeholder-gray-400"}`}
-                  required
-                />
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-200" : "text-gray-700"}`}>Pozisyon *</label>
-                <select
-                  name="position"
-                  value={formData.position}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${theme === "dark" ? "bg-slate-900 border-slate-700 text-gray-100" : "bg-slate-50 border-gray-300 text-gray-900"}`}
-                  required
-                >
-                  <option value="driver">Sürücü</option>
-                  <option value="operator">Operatör</option>
-                  <option value="manager">Yönetici</option>
-                  <option value="other">Diğer</option>
-                </select>
-              </div>
-              <div>
-                <label className={`block text-sm font-medium mb-2 ${theme === "dark" ? "text-gray-200" : "text-gray-700"}`}>Departman</label>
-                <input
-                  type="text"
-                  name="department"
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${theme === "dark" ? "bg-slate-900 border-slate-700 text-gray-100 placeholder-gray-500" : "bg-slate-50 border-gray-300 text-gray-900 placeholder-gray-400"}`}
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`flex-1 bg-blue-600 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200 text-sm sm:text-base ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {loading ? 'Ekleniyor...' : 'Ekle'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="flex-1 bg-gray-500 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium hover:bg-gray-600 transition-colors duration-200 text-sm sm:text-base"
-                >
-                  İptal
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {personnel.length === 0 && !loading && (
+        <motion.div 
+          className="text-center py-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="text-6xl mb-4">👥</div>
+          <h3 className={`text-xl font-semibold mb-2 ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>
+            Henüz Personel Yok
+          </h3>
+          <p className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>
+            İlk personelinizi eklemek için &quot;Personel Ekle&quot; butonuna tıklayın.
+          </p>
+        </motion.div>
       )}
     </div>
   );

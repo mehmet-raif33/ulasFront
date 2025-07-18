@@ -6,12 +6,14 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../redux/store";
 import { toggleTheme } from "../redux/sliceses/themeSlice";
 import { logout } from "../redux/sliceses/authSlices";
+import { broadcastLogout } from "../utils/broadcastChannel";
 
 const NavbarList = [
-    { name: "Gösterge Paneli", href: "/", icon: "📊", requiresAuth: true },
-    { name: "İşlem Ekle", href: "/add-transaction", icon: "📋", requiresAuth: true },
-    { name: "Araçlar", href: "/vehicles", icon: "🚗", requiresAuth: true },
-    { name: "Personeller", href: "/personnel", icon: "👥", requiresAuth: true }
+    { name: "Gösterge Paneli", href: "/", icon: "📊", requiresAuth: true, adminOnly: false },
+    { name: "İşlemler", href: "/transactions", icon: "📋", requiresAuth: true, adminOnly: false },
+    { name: "İşlem Türleri", href: "/transaction-categories", icon: "🏷️", requiresAuth: true, adminOnly: true },
+    { name: "Araçlar", href: "/vehicles", icon: "🚗", requiresAuth: true, adminOnly: false },
+    { name: "Personeller", href: "/personnel", icon: "👥", requiresAuth: true, adminOnly: true }
 ]
 
 interface NavbarComProps {
@@ -38,6 +40,10 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
             // localStorage'dan token'ı sil
             localStorage.removeItem('token');
             dispatch(logout()); // Redux state'i temizle
+            
+            // Diğer sekmelere logout mesajı gönder
+            broadcastLogout();
+            
             router.push('/auth');
             setIsOpen(false);
         } catch (error) {
@@ -45,6 +51,10 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
             // Hata olsa bile localStorage ve Redux state'i temizle
             localStorage.removeItem('token');
             dispatch(logout());
+            
+            // Diğer sekmelere logout mesajı gönder
+            broadcastLogout();
+            
             router.push('/auth');
         }
     }
@@ -81,25 +91,32 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                             )}
                         </div>
                         <div className="flex flex-col space-y-2 w-full px-2">
-                            {isLoggedIn && NavbarList.map((item, index) => (
-                                <Link
-                                    href={item.href}
-                                    className={`text-sm font-medium rounded-lg border flex items-center group transition-all duration-300
-                                        ${theme === 'dark'
-                                            ? 'text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700 hover:text-blue-300 hover:border-blue-400'
-                                            : 'text-slate-700 bg-white border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'}
-                                        ${isOpen ? 'p-2 justify-start w-full' : 'h-12 w-12 justify-center items-center p-0 mx-auto'}
-                                    `}
-                                    key={index}
-                                >
-                                    <span className={`text-xl${isOpen ? ' mr-2' : ''}`}>{item.icon}</span>
-                                    {isOpen && (
-                                        <span className="group-hover:scale-105 transition-transform duration-200">
-                                            {item.name}
-                                        </span>
-                                    )}
-                                </Link>
-                            ))}
+                            {isLoggedIn && NavbarList.map((item, index) => {
+                                // Admin olmayan kullanıcılar için adminOnly sayfalarını gizle
+                                if (item.adminOnly && user?.role !== 'admin') {
+                                    return null;
+                                }
+                                
+                                return (
+                                    <Link
+                                        href={item.href}
+                                        className={`text-sm font-medium rounded-lg border flex items-center group transition-all duration-300
+                                            ${theme === 'dark'
+                                                ? 'text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700 hover:text-blue-300 hover:border-blue-400'
+                                                : 'text-slate-700 bg-white border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300'}
+                                            ${isOpen ? 'p-2 justify-start w-full' : 'h-12 w-12 justify-center items-center p-0 mx-auto'}
+                                        `}
+                                        key={index}
+                                    >
+                                        <span className={`text-xl${isOpen ? ' mr-2' : ''}`}>{item.icon}</span>
+                                        {isOpen && (
+                                            <span className="group-hover:scale-105 transition-transform duration-200">
+                                                {item.name}
+                                            </span>
+                                        )}
+                                    </Link>
+                                );
+                            })}
                             {/* Rol bazlı butonlar (sadece giriş yapıldıysa) */}
                             {isLoggedIn && isOpen && (
                                 <div className="flex flex-col space-y-2 mt-2">
@@ -186,30 +203,37 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
 
             {/* Mobile Bottom Navigation */}
             {isLoggedIn && (
-                <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
+                <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 shadow-lg border-t h-20 ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
                     <div className="flex items-center justify-around px-2 py-1">
-                        {NavbarList.map((item, index) => (
-                            <Link
-                                href={item.href}
-                                className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-200 text-xs ${
-                                    theme === 'dark' 
-                                        ? 'hover:bg-slate-800 active:bg-slate-700 text-gray-200'
-                                        : 'hover:bg-gray-50 active:bg-gray-100 text-gray-700'
-                                }`}
-                                key={index}
-                            >
-                                <span className="text-xl mb-0.5">{item.icon}</span>
-                                <span className={`font-medium ${
-                                    theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-                                }`}>{item.name}</span>
-                            </Link>
-                        ))}
+                        {NavbarList.map((item, index) => {
+                            // Admin olmayan kullanıcılar için adminOnly sayfalarını gizle
+                            if (item.adminOnly && user?.role !== 'admin') {
+                                return null;
+                            }
+                            
+                            return (
+                                <Link
+                                    href={item.href}
+                                    className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-all duration-200 text-xs ${
+                                        theme === 'dark' 
+                                            ? 'hover:bg-slate-800 active:bg-slate-700 text-gray-200'
+                                            : 'hover:bg-gray-50 active:bg-gray-100 text-gray-700'
+                                    }`}
+                                    key={index}
+                                >
+                                    <span className="text-xl mb-0.5">{item.icon}</span>
+                                    <span className={`font-medium ${
+                                        theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+                                    }`}>{item.name}</span>
+                                </Link>
+                            );
+                        })}
                     </div>
                 </nav>
             )}
 
             {/* Mobile Header */}
-            <div className={`lg:hidden fixed top-0 left-0 right-0 z-40 px-3 py-2 shadow-sm border-b ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
+            <div className={`lg:hidden fixed top-0 left-0 right-0 z-40 px-3 py-2 shadow-sm border-b h-16 ${theme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-gray-200'}`}>
                 <div className="flex items-center justify-between">
                     <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         Ulas Tech
