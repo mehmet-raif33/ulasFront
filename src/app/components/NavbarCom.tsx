@@ -11,6 +11,7 @@ import { broadcastLogout } from "../utils/broadcastChannel";
 const NavbarList = [
     { name: "Gösterge Paneli", href: "/", icon: "📊", requiresAuth: true, adminOnly: false },
     { name: "İşlemler", href: "/transactions", icon: "📋", requiresAuth: true, adminOnly: false },
+    { name: "Ciro Hesaplama", href: "/revenue", icon: "💰", requiresAuth: true, adminOnly: true },
     { name: "İşlem Türleri", href: "/transaction-categories", icon: "🏷️", requiresAuth: true, adminOnly: true },
     { name: "Araçlar", href: "/vehicles", icon: "🚗", requiresAuth: true, adminOnly: false },
     { name: "Personeller", href: "/personnel", icon: "👥", requiresAuth: true, adminOnly: true }
@@ -196,6 +197,28 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                                     </button>
                                 )
                             )}
+                            
+                            {/* Theme Toggle Button */}
+                            <div className="mt-4">
+                                <button
+                                    onClick={() => dispatch(toggleTheme())}
+                                    className={`w-full p-2 rounded-lg border flex items-center justify-center transition-all duration-300 ${
+                                        theme === 'dark'
+                                            ? 'text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700 hover:text-yellow-300 hover:border-yellow-400'
+                                            : 'text-slate-700 bg-white border-slate-200 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-300'
+                                    }`}
+                                    aria-label={theme === 'dark' ? 'Light Mode\'a Geç' : 'Dark Mode\'a Geç'}
+                                >
+                                    <span className={`text-xl${isOpen ? ' mr-2' : ''}`}>
+                                        {theme === 'dark' ? '☀️' : '🌙'}
+                                    </span>
+                                    {isOpen && (
+                                        <span className="font-medium">
+                                            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

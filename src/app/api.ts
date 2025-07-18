@@ -270,8 +270,8 @@ export async function createPersonnelApi(token: string, data: {
   full_name: string; 
   username?: string; 
   email: string; 
-  phone: string; 
-  hire_date: string; 
+  phone?: string; 
+  hire_date?: string; 
   status: string; 
   notes?: string;
   password?: string;
@@ -293,17 +293,15 @@ export async function createPersonnelApi(token: string, data: {
 }
 
 export async function updatePersonnelApi(token: string, id: string, data: { 
-  name?: string; 
-  surname?: string; 
+  full_name?: string; 
+  username?: string; 
   email?: string; 
   phone?: string; 
-  position?: string; 
-  department?: string; 
   hire_date?: string; 
-  salary?: number; 
   status?: string; 
   notes?: string;
-  is_active?: boolean 
+  is_active?: boolean;
+  role?: string;
 }) {
   const res = await fetch(`${API_BASE_URL}/personnel/${id}`, {
     method: 'PUT',
@@ -485,4 +483,50 @@ export async function getTransactionsStatsApi(token: string, start_date?: string
   }
   const data = await res.json();
   return data.stats;
+}
+
+// Ciro hesaplama API'leri
+export async function getMonthlyRevenueApi(token: string, year?: number, month?: number) {
+  const params = new URLSearchParams();
+  if (year) params.append('year', year.toString());
+  if (month) params.append('month', month.toString());
+  
+  const res = await fetch(`${API_BASE_URL}/activities/monthly-revenue?${params}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Aylık ciro alınamadı');
+  }
+  return res.json();
+}
+
+export async function getYearlyRevenueApi(token: string, year?: number) {
+  const params = new URLSearchParams();
+  if (year) params.append('year', year.toString());
+  
+  const res = await fetch(`${API_BASE_URL}/activities/yearly-revenue?${params}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Yıllık ciro alınamadı');
+  }
+  return res.json();
+}
+
+export async function getCategoryRevenueApi(token: string, categoryId?: string, startDate?: string, endDate?: string) {
+  const params = new URLSearchParams();
+  if (categoryId) params.append('categoryId', categoryId);
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  
+  const res = await fetch(`${API_BASE_URL}/activities/category-revenue?${params}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Kategori ciro alınamadı');
+  }
+  return res.json();
 } 

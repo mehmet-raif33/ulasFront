@@ -14,14 +14,14 @@ interface Personnel {
   full_name: string;
   username?: string;
   email: string;
-  phone: string;
-  hire_date: string;
+  phone?: string;
+  hire_date?: string;
   status: string;
   notes?: string;
   is_active: boolean;
   role?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 const statCards = [
@@ -123,7 +123,15 @@ const PersonnelPage: React.FC = () => {
           
           setLoading(true);
           const response = await getPersonnelApi(token);
-          setPersonnel(response.data || []);
+          console.log('Personnel API Response:', response);
+          // Backend'den gelen response formatını kontrol et
+          if (response.success && response.data) {
+            setPersonnel(response.data);
+          } else if (Array.isArray(response)) {
+            setPersonnel(response);
+          } else {
+            setPersonnel([]);
+          }
         } catch (error: unknown) {
           console.error('Error loading personnel:', error);
           setError('Personel listesi yüklenirken hata oluştu');
@@ -184,15 +192,23 @@ const PersonnelPage: React.FC = () => {
         return;
       }
       
-      if (!formData.phone.trim()) {
-        setError('Telefon alanı zorunludur');
+      // Email formatını kontrol et
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        setError('Geçerli bir e-posta adresi giriniz');
         return;
       }
       
-      if (!formData.hire_date) {
-        setError('İşe başlama tarihi zorunludur');
-        return;
-      }
+      // Telefon ve hire_date opsiyonel olabilir
+      // if (!formData.phone.trim()) {
+      //   setError('Telefon alanı zorunludur');
+      //   return;
+      // }
+      
+      // if (!formData.hire_date) {
+      //   setError('İşe başlama tarihi zorunludur');
+      //   return;
+      // }
       
       if (formData.username && formData.password && formData.password.length < 6) {
         setError('Şifre en az 6 karakter olmalı');
@@ -203,10 +219,10 @@ const PersonnelPage: React.FC = () => {
         full_name: formData.full_name.trim(),
         username: formData.username.trim() || undefined,
         email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        hire_date: formData.hire_date,
+        phone: formData.phone.trim() || undefined,
+        hire_date: formData.hire_date || undefined,
         status: formData.status,
-        notes: formData.notes.trim(),
+        notes: formData.notes.trim() || undefined,
         password: formData.password || undefined,
         role: formData.role
       };
@@ -218,8 +234,12 @@ const PersonnelPage: React.FC = () => {
 
       const response = await createPersonnelApi(token, personnelData);
       
-      // Add to local state
-      setPersonnel(prev => [...prev, response.data]);
+      // Add to local state - response formatını kontrol et
+      if (response.success && response.data) {
+        setPersonnel(prev => [...prev, response.data]);
+      } else if (response.id) {
+        setPersonnel(prev => [...prev, response]);
+      }
       
       alert("Personel başarıyla eklendi!");
       setShowAddForm(false);
@@ -444,7 +464,7 @@ const PersonnelPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Telefon *</label>
+                  <label className="block text-sm font-medium mb-1">Telefon</label>
                   <input
                     type="tel"
                     name="phone"
@@ -493,7 +513,7 @@ const PersonnelPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">İşe Başlama Tarihi *</label>
+                  <label className="block text-sm font-medium mb-1">İşe Başlama Tarihi</label>
                   <input
                     type="date"
                     name="hire_date"
@@ -582,7 +602,7 @@ const PersonnelPage: React.FC = () => {
             transition={{ duration: 0.3, delay: 0.1 * index }}
             whileHover={{ y: -2 }}
           >
-            <Link href={`/personnel/${person.id}`}>
+            <Link href={`/personnel/${person.id}-${person.full_name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'personel'}`} title={person.full_name || 'Personel Detayı'}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-lg font-semibold ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>
                   {person.full_name || 'İsimsiz'}
