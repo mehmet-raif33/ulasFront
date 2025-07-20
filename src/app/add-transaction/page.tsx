@@ -15,6 +15,8 @@ interface Vehicle {
   model: string;
   year: number;
   color: string;
+  customer_email?: string;
+  customer_phone?: string;
   created_at: string;
 }
 
@@ -55,7 +57,9 @@ const AddTransactionPage: React.FC = () => {
         brand: '',
         model: '',
         year: '',
-        color: ''
+        color: '',
+        customer_email: '',
+        customer_phone: ''
     });
 
     // Giriş yapmamış kullanıcıları landing page'e yönlendir
@@ -178,7 +182,9 @@ const AddTransactionPage: React.FC = () => {
                     brand: newVehicleData.brand.trim(),
                     model: newVehicleData.model.trim(),
                     year: parseInt(newVehicleData.year),
-                    color: newVehicleData.color.trim()
+                    color: newVehicleData.color.trim(),
+                    customer_email: newVehicleData.customer_email.trim(),
+                    customer_phone: newVehicleData.customer_phone.trim()
                 };
 
                 // Yeni araç oluştur
@@ -444,6 +450,40 @@ const AddTransactionPage: React.FC = () => {
                                                     : 'border-gray-300 bg-white text-gray-900'
                                             }`}
                                             placeholder="Beyaz"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            Müşteri E-posta
+                                        </label>
+                                        <input
+                                            type="email"
+                                            name="customer_email"
+                                            value={newVehicleData.customer_email}
+                                            onChange={handleNewVehicleInputChange}
+                                            className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                                theme === 'dark' 
+                                                    ? 'border-slate-600 bg-slate-700 text-white' 
+                                                    : 'border-gray-300 bg-white text-gray-900'
+                                            }`}
+                                            placeholder="musteri@email.com"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            Müşteri Telefon
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            name="customer_phone"
+                                            value={newVehicleData.customer_phone}
+                                            onChange={handleNewVehicleInputChange}
+                                            className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                                theme === 'dark' 
+                                                    ? 'border-slate-600 bg-slate-700 text-white' 
+                                                    : 'border-gray-300 bg-white text-gray-900'
+                                            }`}
+                                            placeholder="+90 555 123 45 67"
                                         />
                                     </div>
                                 </div>

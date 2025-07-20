@@ -11,7 +11,6 @@ import { getActivitiesApi, getVehiclesCountApi, getPersonnelCountApi, getTransac
 
 export default function Home() {
   const user = useSelector(selectUser);
-  // const isAdmin = useSelector(selectIsAdmin);
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const isLoading = useSelector(selectLoading);
   const theme = useSelector((state: RootState) => state.theme.theme);
@@ -24,8 +23,6 @@ export default function Home() {
   const [transactionsStats, setTransactionsStats] = useState<{ total_transactions?: number; total_amount?: number } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
-
-
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -90,8 +87,6 @@ export default function Home() {
       </div>
     );
   }
-
-
 
   return (
     <div className={`flex-1 bg-gradient-to-br min-h-screen p-6 ${theme === 'dark' ? 'from-slate-900 to-blue-950' : 'from-slate-50 to-blue-50'}`}>
@@ -163,23 +158,110 @@ export default function Home() {
         )}
       </div>
 
+      {/* Quick Actions */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+        className="mb-6"
+      >
+        <h2 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Hızlı İşlemler</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.push('/add-transaction')}
+            className={`rounded-lg shadow-sm border p-6 cursor-pointer transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-2xl text-white mx-auto mb-3">➕</div>
+              <h3 className={`font-semibold text-lg mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Yeni İşlem</h3>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Yeni bir işlem ekle</p>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.push('/vehicles')}
+            className={`rounded-lg shadow-sm border p-6 cursor-pointer transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-2xl text-white mx-auto mb-3">🚗</div>
+              <h3 className={`font-semibold text-lg mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Araçlar</h3>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Araç listesini görüntüle</p>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.push('/transactions')}
+            className={`rounded-lg shadow-sm border p-6 cursor-pointer transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-purple-500 flex items-center justify-center text-2xl text-white mx-auto mb-3">📊</div>
+              <h3 className={`font-semibold text-lg mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>İşlemler</h3>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Tüm işlemleri görüntüle</p>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.push('/personnel')}
+            className={`rounded-lg shadow-sm border p-6 cursor-pointer transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-indigo-500 flex items-center justify-center text-2xl text-white mx-auto mb-3">👥</div>
+              <h3 className={`font-semibold text-lg mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Personel</h3>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>Personel listesini görüntüle</p>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activities */}
         <motion.div 
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.4 }}
-          className={`lg:col-span-2 rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+          className={`rounded-xl shadow-lg border p-6 hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
         >
-          <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Son Aktiviteler</h2>
-          {activitiesLoading && <div className="text-center text-sm text-gray-400">Yükleniyor...</div>}
-          {activitiesError && <div className="text-center text-sm text-red-500">{activitiesError}</div>}
-          <div className="space-y-2">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Son Aktiviteler</h2>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${theme === 'dark' ? 'bg-blue-600' : 'bg-blue-500'} text-white`}>
+              📋
+            </div>
+          </div>
+          {activitiesLoading && (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+              <p className="text-sm text-gray-400">Aktiviteler yükleniyor...</p>
+            </div>
+          )}
+          {activitiesError && (
+            <div className="text-center py-8">
+              <div className="text-red-500 text-4xl mb-2">⚠️</div>
+              <p className="text-sm text-red-500">{activitiesError}</p>
+            </div>
+          )}
+          <div className="space-y-3">
             {activities.map((activity, index) => (
-              <div key={activity.id || index} className={`flex items-center space-x-3 p-2 rounded-lg transition-colors duration-200 ${theme === 'dark' ? 'hover:bg-slate-900' : 'hover:bg-gray-50'}`}> 
-                <div className="text-xl">
-                  {/* Icon logic */}
+              <div key={activity.id || index} className={`flex items-center space-x-4 p-4 rounded-lg transition-all duration-200 ${theme === 'dark' ? 'bg-slate-700/50 hover:bg-slate-700 hover:shadow-md' : 'bg-gray-50 hover:bg-gray-100 hover:shadow-sm'}`}> 
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                  activity.action?.toLowerCase().includes('araç') ? 'bg-blue-500' :
+                  activity.action?.toLowerCase().includes('kullanıcı') ? 'bg-green-500' :
+                  activity.action?.toLowerCase().includes('kategori') ? 'bg-purple-500' :
+                  activity.action?.toLowerCase().includes('işlem') ? 'bg-yellow-500' :
+                  activity.action?.toLowerCase().includes('personel') ? 'bg-indigo-500' :
+                  activity.action?.toLowerCase().includes('şifre') ? 'bg-red-500' :
+                  activity.action?.toLowerCase().includes('güncellendi') ? 'bg-orange-500' :
+                  activity.action?.toLowerCase().includes('silindi') ? 'bg-red-600' :
+                  'bg-gray-500'
+                } text-white`}>
                   {activity.action?.toLowerCase().includes('araç') && '🚗'}
                   {activity.action?.toLowerCase().includes('kullanıcı') && '👤'}
                   {activity.action?.toLowerCase().includes('kategori') && '🏷️'}
@@ -191,113 +273,69 @@ export default function Home() {
                   {activity.action?.toLowerCase().includes('eklendi') && '➕'}
                 </div>
                 <div className="flex-1">
-                  <p className={`font-medium ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{activity.action}</p>
-                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>{activity.user_name ? `${activity.user_name} - ` : ''}{activity.created_at ? new Date(activity.created_at).toLocaleString('tr-TR') : ''}</p>
+                  <p className={`font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{activity.action}</p>
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {activity.user_name ? `${activity.user_name} • ` : ''}
+                    {activity.created_at ? new Date(activity.created_at).toLocaleString('tr-TR') : ''}
+                  </p>
                 </div>
               </div>
             ))}
             {!activitiesLoading && !activitiesError && activities.length === 0 && (
-              <div className="text-center text-sm text-gray-400">Henüz etkinlik yok.</div>
+              <div className="text-center py-8">
+                <div className="text-gray-400 text-4xl mb-2">📋</div>
+                <p className="text-sm text-gray-400">Henüz aktivite bulunmuyor.</p>
+              </div>
             )}
           </div>
         </motion.div>
 
-        {/* Quick Actions */}
+        {/* Welcome Message */}
         <motion.div 
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3, delay: 0.5 }}
-          className={`rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
+          className={`rounded-xl shadow-lg border p-6 hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
         >
-          <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Hızlı İşlemler</h2>
-          <div className="space-y-2">
-            <button 
-              onClick={() => router.push('/vehicles')}
-              className={`w-full bg-blue-600 text-white py-2 px-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-blue-800' : 'hover:bg-blue-700'}`}
-            >
-              <span>🚗</span>
-              <span>Araç Ekle</span>
-            </button>
-            <button 
-              onClick={() => router.push('/personnel')}
-              className={`w-full bg-green-600 text-white py-2 px-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-green-800' : 'hover:bg-green-700'}`}
-            >
-              <span>👤</span>
-              <span>Personel Ekle</span>
-            </button>
-            <button 
-              onClick={() => router.push('/add-transaction')}
-              className={`w-full bg-purple-600 text-white py-2 px-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-purple-800' : 'hover:bg-purple-700'}`}
-            >
-              <span>📋</span>
-              <span>İşlem Ekle</span>
-            </button>
-            <button 
-              onClick={() => router.push('/transaction-categories')}
-              className={`w-full bg-orange-600 text-white py-2 px-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2 ${theme === 'dark' ? 'hover:bg-orange-800' : 'hover:bg-orange-700'}`}
-            >
-              <span>📊</span>
-              <span>Kategoriler</span>
-            </button>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Hoş Geldiniz!</h2>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${theme === 'dark' ? 'bg-emerald-600' : 'bg-emerald-500'} text-white`}>
+              👋
+            </div>
           </div>
-        </motion.div>
+          <div className="space-y-4">
+            <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-emerald-50'}`}>
+              <h3 className={`font-semibold text-lg mb-2 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                🎉 Ulaş Araç Takip Sistemi
+              </h3>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                Araç takibi, işlem yönetimi ve personel yönetimi için kapsamlı çözümünüz.
+              </p>
+            </div>
+            
+            <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-blue-50'}`}>
+              <h3 className={`font-semibold text-lg mb-2 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-700'}`}>
+                🚀 Hızlı Başlangıç
+              </h3>
+              <ul className={`text-sm space-y-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                <li>• Yeni araç ekleyin</li>
+                <li>• İşlem kaydı oluşturun</li>
+                <li>• Personel yönetimi yapın</li>
+                <li>• Raporları görüntüleyin</li>
+              </ul>
+            </div>
 
-        {/* System Status */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.6 }}
-          className={`rounded-lg shadow-sm border p-4 hover:shadow-lg hover:scale-[1.02] transition-all duration-300 cursor-pointer ${theme === 'dark' ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'}`}
-        >
-          <h2 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Sistem Durumu</h2>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Veritabanı</span>
-              <span className={`font-medium ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>✓ Aktif</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>API Servisi</span>
-              <span className={`font-medium ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>✓ Aktif</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Güvenlik</span>
-              <span className={`font-medium ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>✓ Güvenli</span>
+            <div className={`p-4 rounded-lg ${theme === 'dark' ? 'bg-slate-700/50' : 'bg-purple-50'}`}>
+              <h3 className={`font-semibold text-lg mb-2 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-700'}`}>
+                📊 İstatistikler
+              </h3>
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                Sistem genelinde araç, personel ve işlem istatistiklerinizi takip edin.
+              </p>
             </div>
           </div>
         </motion.div>
       </div>
-
-      {/* Bottom Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.7 }}
-        className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-4"
-      >
-        {/* Welcome Message */}
-        <div className={`rounded-lg shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <h3 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
-            🎉 Hoş Geldiniz!
-          </h3>
-          <p className={`${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-            Araç Filo Yönetim Sistemine hoş geldiniz. Sol menüden istediğiniz bölüme erişebilir ve 
-            filo yönetiminizi kolayca gerçekleştirebilirsiniz.
-          </p>
-        </div>
-
-        {/* Quick Tips */}
-        <div className={`rounded-lg shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}>
-          <h3 className={`text-xl font-semibold mb-3 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
-            💡 Hızlı İpuçları
-          </h3>
-          <ul className={`space-y-2 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-            <li>• Araç eklemek için &ldquo;Araç Ekle&rdquo; butonunu kullanın</li>
-            <li>• Personel yönetimi için &ldquo;Personel Ekle&rdquo; seçeneğini kullanın</li>
-            <li>• İşlem kayıtları için &ldquo;İşlem Ekle&rdquo; butonunu kullanın</li>
-            <li>• Kategorileri yönetmek için &ldquo;Kategoriler&rdquo; seçeneğini kullanın</li>
-          </ul>
-        </div>
-      </motion.div>
     </div>
   );
 }

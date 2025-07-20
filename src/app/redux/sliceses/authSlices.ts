@@ -13,6 +13,7 @@ interface AuthState {
   } | null
   loading: boolean
   error: string | null
+  isInitialized: boolean
 }
 
 // Define the initial state using that type
@@ -21,6 +22,7 @@ const initialState: AuthState = {
   user: null,
   loading: false,
   error: null,
+  isInitialized: false,
 }
 
 export const authSlice = createSlice({
@@ -54,11 +56,15 @@ export const authSlice = createSlice({
       state.user = action.payload
       state.loading = false
       state.error = null
+      state.isInitialized = true
+    },
+    setInitialized: (state, action: PayloadAction<boolean>) => {
+      state.isInitialized = action.payload
     },
   },
 })
 
-export const { login, logout, setLoading, setError, clearError, restoreAuth } = authSlice.actions
+export const { login, logout, setLoading, setError, clearError, restoreAuth, setInitialized } = authSlice.actions
 
 // Selectors
 export const selectIsLoggedIn = (state: RootState) => state.auth.isLoggedIn
@@ -66,5 +72,6 @@ export const selectUser = (state: RootState) => state.auth.user
 export const selectLoading = (state: RootState) => state.auth.loading
 export const selectError = (state: RootState) => state.auth.error
 export const selectIsAdmin = (state: RootState) => state.auth.user?.role === 'admin'
+export const selectIsInitialized = (state: RootState) => state.auth.isInitialized
 
 export default authSlice.reducer

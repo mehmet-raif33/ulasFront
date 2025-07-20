@@ -13,16 +13,21 @@ interface Transaction {
   personnel_id: string;
   vehicle_id: string;
   description: string;
-  amount: number;
+  amount: string; // Backend'den decimal olarak geldiği için string
   transaction_date: string;
   category_id: string;
   created_at: string;
+  status?: string;
+  status_notes?: string;
+  status_changed_at?: string;
+  status_changed_by?: string;
   // Joined data
   vehicle_plate?: string;
   vehicle_brand?: string;
   vehicle_model?: string;
   personnel_name?: string;
   category_name?: string;
+  status_changed_by_name?: string;
 }
 
 // Vehicle interface
@@ -50,6 +55,7 @@ const TransactionsPage: React.FC = () => {
     const [filters, setFilters] = useState({
         vehicle_plate: '',
         category_id: '',
+        status: '',
         date_from: '',
         date_to: '',
         min_amount: '',
@@ -113,6 +119,7 @@ const TransactionsPage: React.FC = () => {
         setFilters({
             vehicle_plate: '',
             category_id: '',
+            status: '',
             date_from: '',
             date_to: '',
             min_amount: '',
@@ -131,6 +138,11 @@ const TransactionsPage: React.FC = () => {
 
         // Category filter
         if (filters.category_id && transaction.category_id !== filters.category_id) {
+            return false;
+        }
+
+        // Status filter
+        if (filters.status && transaction.status !== filters.status) {
             return false;
         }
 
@@ -153,11 +165,11 @@ const TransactionsPage: React.FC = () => {
         }
 
         // Amount range filter
-        if (filters.min_amount && transaction.amount < parseFloat(filters.min_amount)) {
+        if (filters.min_amount && parseFloat(transaction.amount) < parseFloat(filters.min_amount)) {
             return false;
         }
 
-        if (filters.max_amount && transaction.amount > parseFloat(filters.max_amount)) {
+        if (filters.max_amount && parseFloat(transaction.amount) > parseFloat(filters.max_amount)) {
             return false;
         }
 
@@ -165,7 +177,7 @@ const TransactionsPage: React.FC = () => {
     });
 
     // Calculate totals for filtered transactions
-    const totalAmount = filteredTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+    const totalAmount = filteredTransactions.reduce((sum, transaction) => sum + parseFloat(transaction.amount), 0);
     const averageAmount = filteredTransactions.length > 0 ? totalAmount / filteredTransactions.length : 0;
 
     // Giriş yapmamış kullanıcılar için loading göster
@@ -205,8 +217,8 @@ const TransactionsPage: React.FC = () => {
                         whileTap={{ scale: 0.95 }}
                         className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-white transition-all duration-200 shadow-lg text-sm sm:text-base ${
                             theme === 'dark'
-                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
-                                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
+                                ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
+                                : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
                         }`}
                     >
                         <span className="flex items-center">
@@ -374,6 +386,29 @@ const TransactionsPage: React.FC = () => {
                             </select>
                         </div>
 
+                        {/* Status Filter */}
+                        <div>
+                            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Durum
+                            </label>
+                            <select
+                                name="status"
+                                value={filters.status}
+                                onChange={handleFilterChange}
+                                className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                    theme === 'dark' 
+                                        ? 'border-slate-600 bg-slate-700 text-white' 
+                                        : 'border-gray-300 bg-white text-gray-900'
+                                }`}
+                            >
+                                <option value="">Tüm Durumlar</option>
+                                <option value="pending">Beklemede</option>
+                                <option value="in_progress">Devam Ediyor</option>
+                                <option value="completed">Tamamlandı</option>
+                                <option value="cancelled">İptal Edildi</option>
+                            </select>
+                        </div>
+
                         {/* Date From Filter */}
                         <div>
                             <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -504,10 +539,16 @@ const TransactionsPage: React.FC = () => {
                                             Açıklama
                                         </th>
                                         <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                            Durum
+                                        </th>
+                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
                                             Tutar
                                         </th>
                                         <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
                                             Personel
+                                        </th>
+                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                            İşlemler
                                         </th>
                                     </tr>
                                 </thead>
@@ -545,15 +586,58 @@ const TransactionsPage: React.FC = () => {
                                                     {transaction.description || 'Açıklama yok'}
                                                 </div>
                                             </td>
+                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                    transaction.status === 'pending' 
+                                                        ? theme === 'dark' ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-800'
+                                                        : transaction.status === 'in_progress'
+                                                        ? theme === 'dark' ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                                                        : transaction.status === 'completed'
+                                                        ? theme === 'dark' ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'
+                                                        : transaction.status === 'cancelled'
+                                                        ? theme === 'dark' ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800'
+                                                        : theme === 'dark' ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {transaction.status === 'pending' ? 'Beklemede' : 
+                                                     transaction.status === 'in_progress' ? 'Devam Ediyor' : 
+                                                     transaction.status === 'completed' ? 'Tamamlandı' : 
+                                                     transaction.status === 'cancelled' ? 'İptal Edildi' : 
+                                                     'Bilinmiyor'}
+                                                </span>
+                                            </td>
                                             <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                                                transaction.amount >= 0 
+                                                parseFloat(transaction.amount) >= 0 
                                                     ? theme === 'dark' ? 'text-green-400' : 'text-green-600'
                                                     : theme === 'dark' ? 'text-red-400' : 'text-red-600'
                                             }`}>
-                                                ₺{transaction.amount.toLocaleString('tr-TR')}
+                                                ₺{parseFloat(transaction.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                             <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
                                                 {transaction.personnel_name || 'N/A'}
+                                            </td>
+                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                <div className="flex space-x-2">
+                                                    <button
+                                                        onClick={() => router.push(`/transactions/${transaction.id}/edit`)}
+                                                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${
+                                                            theme === 'dark'
+                                                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                                : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                                        }`}
+                                                    >
+                                                        Düzenle
+                                                    </button>
+                                                    <button
+                                                        onClick={() => router.push(`/transactions/${transaction.id}`)}
+                                                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${
+                                                            theme === 'dark'
+                                                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                                                : 'bg-green-500 hover:bg-green-600 text-white'
+                                                        }`}
+                                                    >
+                                                        Detay
+                                                    </button>
+                                                </div>
                                             </td>
                                         </motion.tr>
                                     ))}

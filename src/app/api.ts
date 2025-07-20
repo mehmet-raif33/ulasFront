@@ -164,8 +164,15 @@ export async function deleteTransactionCategoryApi(token: string, id: string) {
 }
 
 // Vehicles API
-export async function getVehiclesApi(token: string) {
-  const res = await fetch(`${API_BASE_URL}/vehicles`, {
+export async function getVehiclesApi(token: string, params?: { page?: number; limit?: number; search?: string }) {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  if (params?.search) queryParams.append('search', params.search);
+  
+  const url = `${API_BASE_URL}/vehicles${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  
+  const res = await fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -193,6 +200,8 @@ export async function createVehicleApi(token: string, data: {
   model: string; 
   year: number; 
   color: string; 
+  customer_email?: string; 
+  customer_phone?: string; 
 }) {
   const res = await fetch(`${API_BASE_URL}/vehicles`, {
     method: 'POST',
@@ -243,8 +252,16 @@ export async function deleteVehicleApi(token: string, plate: string) {
 }
 
 // Personnel API
-export async function getPersonnelApi(token: string) {
-  const res = await fetch(`${API_BASE_URL}/personnel`, {
+export async function getPersonnelApi(token: string, params?: { page?: number; limit?: number; search?: string; status?: string }) {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.status) queryParams.append('status', params.status);
+  
+  const url = `${API_BASE_URL}/personnel${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  
+  const res = await fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -331,8 +348,27 @@ export async function deletePersonnelApi(token: string, id: string) {
 }
 
 // Transactions API
-export async function getTransactionsApi(token: string) {
-  const res = await fetch(`${API_BASE_URL}/transactions`, {
+export async function getTransactionsApi(token: string, params?: { 
+  page?: number; 
+  limit?: number; 
+  vehicle_id?: string; 
+  personnel_id?: string; 
+  category_id?: string; 
+  start_date?: string; 
+  end_date?: string; 
+}) {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  if (params?.vehicle_id) queryParams.append('vehicle_id', params.vehicle_id);
+  if (params?.personnel_id) queryParams.append('personnel_id', params.personnel_id);
+  if (params?.category_id) queryParams.append('category_id', params.category_id);
+  if (params?.start_date) queryParams.append('start_date', params.start_date);
+  if (params?.end_date) queryParams.append('end_date', params.end_date);
+  
+  const url = `${API_BASE_URL}/transactions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  
+  const res = await fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -429,6 +465,35 @@ export async function getTransactionsByCategoryApi(token: string, categoryId: st
   if (!res.ok) {
     const error = await res.json();
     throw new Error(error.message || 'Kategori işlemleri alınamadı');
+  }
+  return res.json();
+}
+
+// Get transaction history
+export async function getTransactionHistoryApi(token: string, transactionId: string) {
+  const res = await fetch(`${API_BASE_URL}/transactions/${transactionId}/history`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'İşlem geçmişi alınamadı');
+  }
+  return res.json();
+}
+
+// Update transaction status
+export async function updateTransactionStatusApi(token: string, transactionId: string, data: { status: string; notes?: string }) {
+  const res = await fetch(`${API_BASE_URL}/transactions/${transactionId}/status`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'İşlem durumu güncellenemedi');
   }
   return res.json();
 } 
@@ -529,4 +594,155 @@ export async function getCategoryRevenueApi(token: string, categoryId?: string, 
     throw new Error(error.message || 'Kategori ciro alınamadı');
   }
   return res.json();
-} 
+}
+
+// Kategori bazında yıllık ciro
+export async function getCategoryYearlyRevenueApi(token: string, params: { categoryId?: string; year?: number }) {
+  let url = `${API_BASE_URL}/activities/category-yearly-revenue`;
+  const queryParams = new URLSearchParams();
+  
+  if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+  if (params.year) queryParams.append('year', params.year.toString());
+  
+  if (queryParams.toString()) {
+    url += `?${queryParams.toString()}`;
+  }
+
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Kategori yıllık ciro verisi alınamadı');
+  }
+  return res.json();
+}
+
+// Kategori bazında aylık ciro
+export async function getCategoryMonthlyRevenueApi(token: string, params: { categoryId?: string; year?: number; month?: number }) {
+  let url = `${API_BASE_URL}/activities/category-monthly-revenue`;
+  const queryParams = new URLSearchParams();
+  
+  if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+  if (params.year) queryParams.append('year', params.year.toString());
+  if (params.month) queryParams.append('month', params.month.toString());
+  
+  if (queryParams.toString()) {
+    url += `?${queryParams.toString()}`;
+  }
+
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Kategori aylık ciro verisi alınamadı');
+  }
+  return res.json();
+}
+
+// Kategori bazında haftalık ciro
+export async function getCategoryWeeklyRevenueApi(token: string, params: { categoryId?: string; year?: number; week?: number }) {
+  let url = `${API_BASE_URL}/activities/category-weekly-revenue`;
+  const queryParams = new URLSearchParams();
+  
+  if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+  if (params.year) queryParams.append('year', params.year.toString());
+  if (params.week) queryParams.append('week', params.week.toString());
+  
+  if (queryParams.toString()) {
+    url += `?${queryParams.toString()}`;
+  }
+
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Kategori haftalık ciro verisi alınamadı');
+  }
+  return res.json();
+}
+
+// Kategori bazında günlük ciro
+export async function getCategoryDailyRevenueApi(token: string, params: { categoryId?: string; date?: string }) {
+  let url = `${API_BASE_URL}/activities/category-daily-revenue`;
+  const queryParams = new URLSearchParams();
+  
+  if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+  if (params.date) queryParams.append('date', params.date);
+  
+  if (queryParams.toString()) {
+    url += `?${queryParams.toString()}`;
+  }
+
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Kategori günlük ciro verisi alınamadı');
+  }
+  return res.json();
+}
+
+// Kategori bazında manuel tarih aralığı ciro
+export async function getCategoryCustomRevenueApi(token: string, params: { categoryId?: string; startDate?: string; endDate?: string }) {
+  let url = `${API_BASE_URL}/activities/category-custom-revenue`;
+  const queryParams = new URLSearchParams();
+  
+  if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+  if (params.startDate) queryParams.append('startDate', params.startDate);
+  if (params.endDate) queryParams.append('endDate', params.endDate);
+  
+  if (queryParams.toString()) {
+    url += `?${queryParams.toString()}`;
+  }
+
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Kategori manuel ciro verisi alınamadı');
+  }
+  return res.json();
+}
+
+// Customer Statistics API
+export async function getCustomerStatsApi(token: string) {
+  const res = await fetch(`${API_BASE_URL}/vehicles/customer-stats`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Müşteri istatistikleri alınamadı');
+  }
+  const data = await res.json();
+  return data;
+}
+
+export async function getTopCustomersApi(token: string, limit?: number) {
+  const url = `${API_BASE_URL}/vehicles/top-customers${limit ? `?limit=${limit}` : ''}`;
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'En çok işlem yapan müşteriler alınamadı');
+  }
+  const data = await res.json();
+  return data.data;
+}
+
+export async function getCustomerRevenueShareApi(token: string) {
+  const res = await fetch(`${API_BASE_URL}/vehicles/customer-revenue-share`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Müşteri ciro payları alınamadı');
+  }
+  const data = await res.json();
+  return data.data;
+}

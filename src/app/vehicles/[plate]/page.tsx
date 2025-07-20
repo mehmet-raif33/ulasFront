@@ -27,7 +27,7 @@ interface Transaction {
     personnel_id: string;
     vehicle_id: string;
     description: string;
-    amount: number;
+    amount: number | string;
     transaction_date: string;
     category_id: string;
     created_at: string;
@@ -105,7 +105,10 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
     }, [plate, isLoggedIn]);
 
     // Calculate transaction statistics
-    const totalAmount = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+    const totalAmount = transactions.reduce((sum, transaction) => {
+        const amount = typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : transaction.amount;
+        return sum + (amount || 0);
+    }, 0);
     const averageAmount = transactions.length > 0 ? totalAmount / transactions.length : 0;
     // const recentTransactions = transactions.slice(0, 5); // Last 5 transactions
 
@@ -450,11 +453,11 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
                                                         </div>
                                                     </td>
                                                     <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                                                        transaction.amount >= 0 
+                                                        (typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : transaction.amount) >= 0 
                                                             ? theme === 'dark' ? 'text-green-400' : 'text-green-600'
                                                             : theme === 'dark' ? 'text-red-400' : 'text-red-600'
                                                     }`}>
-                                                        ₺{transaction.amount.toLocaleString('tr-TR')}
+                                                        ₺{(typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : transaction.amount).toLocaleString('tr-TR')}
                                                     </td>
                                                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
                                                         {transaction.personnel_name || 'N/A'}

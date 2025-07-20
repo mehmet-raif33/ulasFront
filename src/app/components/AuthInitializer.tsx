@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
-import { restoreAuth, setLoading, logout } from '../redux/sliceses/authSlices';
+import { restoreAuth, setLoading, logout, setInitialized } from '../redux/sliceses/authSlices';
 import { getProfileApi } from '../api';
 import { useState } from 'react';
 import { tabComm, MESSAGE_TYPES } from '../utils/broadcastChannel';
@@ -45,21 +45,21 @@ const AuthInitializer = () => {
             const errorMessage = error && typeof error === 'object' && 'message' in error ? (error as { message?: string }).message || 'Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.' : 'Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.';
             setErrorMessage(errorMessage);
             
-            // Sadece korumalı sayfalardaysa landing page'e yönlendir
-            const protectedRoutes = ['/vehicles', '/personnel', '/add-transaction', '/transaction-categories'];
-            if (protectedRoutes.includes(currentPath)) {
+            // Korumalı sayfalardaysa landing page'e yönlendir (landing ve auth hariç)
+            if (currentPath !== '/landing' && currentPath !== '/auth') {
               router.push('/landing');
             }
           } finally {
             dispatch(setLoading(false));
+            dispatch(setInitialized(true));
           }
         } else {
-          // Token yoksa sadece korumalı sayfalardaysa landing page'e yönlendir
-          const protectedRoutes = ['/vehicles', '/personnel', '/add-transaction', '/transaction-categories'];
-          if (protectedRoutes.includes(currentPath)) {
+          // Token yoksa korumalı sayfalardaysa landing page'e yönlendir (landing ve auth hariç)
+          if (currentPath !== '/landing' && currentPath !== '/auth') {
             router.push('/landing');
           }
           dispatch(setLoading(false));
+          dispatch(setInitialized(true));
         }
       }
     };

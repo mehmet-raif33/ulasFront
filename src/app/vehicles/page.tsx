@@ -16,6 +16,8 @@ interface Vehicle {
   model: string;
   year: number;
   color: string;
+  customer_email?: string;
+  customer_phone?: string;
   created_at: string;
 }
 
@@ -28,12 +30,21 @@ const VehiclesPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0
+    });
+    const [hasMore, setHasMore] = useState(true);
     const [formData, setFormData] = useState({
         plate: '',
         brand: '',
         model: '',
         year: '',
-        color: ''
+        color: '',
+        customer_email: '',
+        customer_phone: ''
     });
 
     // Giriş yapmamış kullanıcıları landing page'e yönlendir
@@ -46,28 +57,78 @@ const VehiclesPage: React.FC = () => {
     // Load vehicles on component mount
     useEffect(() => {
         if (isLoggedIn) {
-            const loadVehicles = async () => {
-                try {
-                    const token = localStorage.getItem('token');
-                    if (!token) {
-                        setError('Token bulunamadı');
-                        return;
-                    }
-                    
-                    setLoading(true);
-                    const response = await getVehiclesApi(token);
-                    
-                    setVehicles(response.data || []);
-                } catch (error: unknown) {
-                    console.error('Error loading vehicles:', error);
-                    setError('Araçlar yüklenirken hata oluştu');
-                } finally {
-                    setLoading(false);
-                }
-            };
-            loadVehicles();
+            loadVehicles(1, true);
         }
     }, [isLoggedIn]);
+
+    // Load vehicles function
+    const loadVehicles = async (page: number = 1, reset: boolean = false) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setError('Token bulunamadı');
+                return;
+            }
+            
+            setLoading(true);
+            const response = await getVehiclesApi(token, {
+                page,
+                limit: pagination.limit,
+                search: searchTerm
+            });
+            
+            if (reset) {
+                setVehicles(response.data || []);
+            } else {
+                setVehicles(prev => [...prev, ...(response.data || [])]);
+            }
+            
+            setPagination(response.pagination);
+            setHasMore(page < response.pagination.totalPages);
+        } catch (error: unknown) {
+            console.error('Error loading vehicles:', error);
+            setError('Araçlar yüklenirken hata oluştu');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Load more vehicles (infinite scroll)
+    const loadMore = () => {
+        if (!loading && hasMore) {
+            loadVehicles(pagination.page + 1, false);
+        }
+    };
+
+    // Search effect
+    useEffect(() => {
+        if (isLoggedIn) {
+            loadVehicles(1, true);
+        }
+    }, [searchTerm]);
+
+    // Infinite scroll observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loading) {
+                    loadMore();
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        const sentinel = document.getElementById('scroll-sentinel');
+        if (sentinel) {
+            observer.observe(sentinel);
+        }
+
+        return () => {
+            if (sentinel) {
+                observer.unobserve(sentinel);
+            }
+        };
+    }, [hasMore, loading]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({
@@ -118,7 +179,9 @@ const VehiclesPage: React.FC = () => {
                 brand: formData.brand.trim(),
                 model: formData.model.trim(),
                 year: parseInt(formData.year),
-                color: formData.color.trim()
+                color: formData.color.trim(),
+                customer_email: formData.customer_email.trim(),
+                customer_phone: formData.customer_phone.trim()
             };
 
 
@@ -144,7 +207,9 @@ const VehiclesPage: React.FC = () => {
                 brand: '',
                 model: '',
                 year: '',
-                color: ''
+                color: '',
+                customer_email: '',
+                customer_phone: ''
             });
         } catch (error: unknown) {
             console.error('Error creating vehicle:', error);
@@ -157,13 +222,7 @@ const VehiclesPage: React.FC = () => {
         }
     };
 
-    // Filter vehicles based on search term
-    const filteredVehicles = vehicles.filter(vehicle =>
-        vehicle.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (vehicle.color && vehicle.color.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // No need for client-side filtering since we're using backend search
 
     return (
         <div className={`flex-1 bg-gradient-to-br min-h-screen p-6 ${theme === 'dark' ? 'from-slate-900 to-blue-950' : 'from-slate-50 to-blue-50'}`}>
@@ -211,13 +270,13 @@ const VehiclesPage: React.FC = () => {
                         </div>
                         {searchTerm && (
                             <p className={`text-sm mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                {filteredVehicles.length} araç bulundu
+                                {pagination.total} araç bulundu
                             </p>
                         )}
                     </div>
                     <button
                         onClick={() => setShowAddForm(true)}
-                        className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm sm:text-base whitespace-nowrap"
+                        className="px-4 sm:px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm sm:text-base whitespace-nowrap"
                     >
                         + Araç Ekle
                     </button>
@@ -337,6 +396,36 @@ const VehiclesPage: React.FC = () => {
                                     placeholder="Beyaz"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Müşteri E-posta</label>
+                                <input
+                                    type="email"
+                                    name="customer_email"
+                                    value={formData.customer_email}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        theme === 'dark' 
+                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    }`}
+                                    placeholder="musteri@email.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Müşteri Telefon</label>
+                                <input
+                                    type="tel"
+                                    name="customer_phone"
+                                    value={formData.customer_phone}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        theme === 'dark' 
+                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
+                                            : 'bg-white border-gray-300 text-gray-800'
+                                    }`}
+                                    placeholder="+90 555 123 45 67"
+                                />
+                            </div>
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="button"
@@ -365,7 +454,7 @@ const VehiclesPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.2 }}
             >
-                {filteredVehicles.map((vehicle, index) => (
+                {vehicles.map((vehicle, index) => (
                     <motion.div
                         key={vehicle.id}
                         className={`rounded-xl shadow-sm border p-6 ${theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'}`}
@@ -398,6 +487,18 @@ const VehiclesPage: React.FC = () => {
                                 <span>Renk:</span>
                                 <span>{vehicle.color || 'Belirtilmemiş'}</span>
                             </div>
+                            {vehicle.customer_email && (
+                                <div className={`flex justify-between text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    <span>E-posta:</span>
+                                    <span className="truncate max-w-32">{vehicle.customer_email}</span>
+                                </div>
+                            )}
+                            {vehicle.customer_phone && (
+                                <div className={`flex justify-between text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    <span>Telefon:</span>
+                                    <span>{vehicle.customer_phone}</span>
+                                </div>
+                            )}
                             <div className={`flex justify-between text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                                 <span>Eklenme:</span>
                                 <span>{vehicle.created_at ? new Date(vehicle.created_at).toLocaleDateString('tr-TR') : 'Tarih yok'}</span>
@@ -420,7 +521,7 @@ const VehiclesPage: React.FC = () => {
             </motion.div>
 
             {/* Empty State */}
-            {filteredVehicles.length === 0 && !loading && (
+            {vehicles.length === 0 && !loading && (
                 <motion.div 
                     className="text-center py-12"
                     initial={{ opacity: 0 }}
@@ -437,6 +538,36 @@ const VehiclesPage: React.FC = () => {
                         }
                     </p>
                 </motion.div>
+            )}
+
+            {/* Infinite Scroll Sentinel */}
+            {hasMore && (
+                <div id="scroll-sentinel" className="py-4 text-center">
+                    {loading ? (
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    ) : (
+                        <button
+                            onClick={loadMore}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                                theme === 'dark' 
+                                    ? 'bg-slate-700 text-gray-200 hover:bg-slate-600' 
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            Daha Fazla Yükle
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Loading More Indicator */}
+            {loading && vehicles.length > 0 && (
+                <div className="py-4 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                        Daha fazla araç yükleniyor...
+                    </p>
+                </div>
             )}
         </div>
     );

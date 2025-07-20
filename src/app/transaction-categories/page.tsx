@@ -13,6 +13,7 @@ interface TransactionCategory {
   name: string;
   description?: string;
   created_at: string;
+  transaction_count?: number;
 }
 
 const TransactionCategoriesPage: React.FC = () => {
@@ -138,7 +139,8 @@ const TransactionCategoriesPage: React.FC = () => {
     };
 
     const handleDelete = async (categoryId: string) => {
-        if (!confirm('Bu işlem türünü silmek istediğinizden emin misiniz?')) {
+        const categoryToDelete = categories.find(cat => cat.id === categoryId);
+        if (!confirm(`"${categoryToDelete?.name}" işlem türünü silmek istediğinizden emin misiniz?\n\nBu işlem türüne ait işlemler varsa silinemez.`)) {
             return;
         }
         try {
@@ -153,7 +155,7 @@ const TransactionCategoriesPage: React.FC = () => {
             console.error('Error deleting category:', error);
             let message = 'İşlem türü silinirken hata oluştu';
             if (error && typeof error === 'object' && 'message' in error) {
-                message += `: ${(error as { message?: string }).message}`;
+                message = (error as { message?: string }).message || message;
             }
             setError(message);
         }
@@ -233,7 +235,7 @@ const TransactionCategoriesPage: React.FC = () => {
                 >
                     <button
                         onClick={() => setShowAddForm(true)}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                     >
                         + İşlem Türü Ekle
                     </button>
@@ -349,6 +351,15 @@ const TransactionCategoriesPage: React.FC = () => {
                         </div>
                         <div className={`flex items-center justify-between text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                             <span>Oluşturulma: {category.created_at ? new Date(category.created_at).toLocaleDateString('tr-TR') : 'Tarih yok'}</span>
+                            {category.transaction_count !== undefined && (
+                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                    category.transaction_count > 0 
+                                        ? theme === 'dark' ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                                        : theme === 'dark' ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'
+                                }`}>
+                                    {category.transaction_count} işlem
+                                </span>
+                            )}
                         </div>
                     </motion.div>
                 ))}
