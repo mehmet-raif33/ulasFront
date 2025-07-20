@@ -10,7 +10,7 @@ if (process.env.NODE_ENV === 'production') {
   // Development ortamında local server'ı kullan
   API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API || 'http://localhost:5000';
 } 
-
+  //dsfdsf
 // Fallback için güvenlik kontrolü - protokolü garanti et
 if (!API_BASE_URL || !API_BASE_URL.startsWith('http')) {
   console.warn('API_BASE_URL is not set or invalid, using default localhost');
