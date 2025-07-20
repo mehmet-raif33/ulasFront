@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { RootState } from "../../../redux/store";
 import { selectIsLoggedIn, selectUser } from "../../../redux/sliceses/authSlices";
 import Link from "next/link";
@@ -171,7 +171,7 @@ const PersonnelEditPage: React.FC<PersonnelEditPageProps> = ({ params }) => {
             } else {
               setError('Personel bulunamadı');
             }
-          } catch (apiError) {
+          } catch {
             setError('Personel bulunamadı');
           }
         }

@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { RootState } from "../../redux/store";
 import { selectIsLoggedIn, selectUser } from "../../redux/sliceses/authSlices";
 import Link from "next/link";
@@ -82,7 +82,7 @@ const PersonnelDetailPage: React.FC<PersonnelPageProps> = ({ params }) => {
             } else {
               setError('Personel bulunamadı');
             }
-          } catch (apiError) {
+          } catch {
             setError('Personel bulunamadı');
           }
         }
@@ -163,7 +163,7 @@ const PersonnelDetailPage: React.FC<PersonnelPageProps> = ({ params }) => {
         <div className={`text-center ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>
           <div className="text-6xl mb-4">👤</div>
           <h1 className={`text-2xl font-bold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Personel Bulunamadı</h1>
-          <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Bu ID'ye sahip personel sistemde bulunmamaktadır.</p>
+          <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>Bu ID&apos;ye sahip personel sistemde bulunmamaktadır.</p>
           <Link href="/personnel" className={`mt-4 inline-block px-6 py-3 rounded-lg transition-colors ${theme === 'dark' ? 'bg-blue-800 text-white hover:bg-blue-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
             Personellere Dön
           </Link>

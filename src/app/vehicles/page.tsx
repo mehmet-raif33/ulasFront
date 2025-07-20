@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { RootState } from '../redux/store';
@@ -62,7 +62,7 @@ const VehiclesPage: React.FC = () => {
     }, [isLoggedIn]);
 
     // Load vehicles function
-    const loadVehicles = async (page: number = 1, reset: boolean = false) => {
+    const loadVehicles = useCallback(async (page: number = 1, reset: boolean = false) => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -91,21 +91,21 @@ const VehiclesPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [searchTerm, pagination.limit]);
 
     // Load more vehicles (infinite scroll)
-    const loadMore = () => {
+    const loadMore = useCallback(() => {
         if (!loading && hasMore) {
             loadVehicles(pagination.page + 1, false);
         }
-    };
+    }, [loading, hasMore, pagination.page, loadVehicles]);
 
     // Search effect
     useEffect(() => {
         if (isLoggedIn) {
             loadVehicles(1, true);
         }
-    }, [searchTerm]);
+    }, [searchTerm, isLoggedIn]);
 
     // Infinite scroll observer
     useEffect(() => {
@@ -128,7 +128,7 @@ const VehiclesPage: React.FC = () => {
                 observer.unobserve(sentinel);
             }
         };
-    }, [hasMore, loading]);
+    }, [hasMore, loading, loadMore]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setFormData({

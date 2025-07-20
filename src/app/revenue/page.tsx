@@ -107,6 +107,25 @@ interface WeeklyRevenue {
   }>;
 }
 
+interface CategoryData {
+  category_name: string;
+  totalRevenue: number;
+  totalTransactions: number;
+  monthlyBreakdown?: Array<{
+    month: number;
+    monthName: string;
+    revenue: number;
+    transactionCount: number;
+  }>;
+}
+
+interface MonthlyBreakdownData {
+  month: number;
+  monthName: string;
+  revenue: number;
+  transactionCount: number;
+}
+
 const RevenuePage: React.FC = () => {
   const theme = useSelector((state: RootState) => state.theme.theme);
   const isLoggedIn = useSelector(selectIsLoggedIn);
@@ -131,7 +150,7 @@ const RevenuePage: React.FC = () => {
   // Weekly revenue state
   const [weeklyData, setWeeklyData] = useState<WeeklyRevenue | null>(null);
   const [dailyData, setDailyData] = useState<WeeklyRevenue | null>(null);
-  const [selectedPeriodType, setSelectedPeriodType] = useState<'daily' | 'weekly'>('daily');
+
   const [selectedStartDate, setSelectedStartDate] = useState(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -206,8 +225,8 @@ const RevenuePage: React.FC = () => {
         if (data.success) {
           if (selectedCategoriesForMonthly.length > 0 && data.data.categories) {
             // Seçilen kategorilerin verilerini topla
-            const totalRevenue = data.data.categories.reduce((sum: number, cat: any) => sum + cat.totalRevenue, 0);
-            const totalTransactions = data.data.categories.reduce((sum: number, cat: any) => sum + cat.totalTransactions, 0);
+            const totalRevenue = data.data.categories.reduce((sum: number, cat: CategoryData) => sum + cat.totalRevenue, 0);
+            const totalTransactions = data.data.categories.reduce((sum: number, cat: CategoryData) => sum + cat.totalTransactions, 0);
             const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
             
             const monthlyDataFormatted: MonthlyRevenue = {
@@ -218,7 +237,7 @@ const RevenuePage: React.FC = () => {
                 averageTransaction: averageTransaction
               },
               breakdown: {
-                byCategory: data.data.categories.map((cat: any) => ({
+                byCategory: data.data.categories.map((cat: CategoryData) => ({
                   category: cat.category_name,
                   revenue: cat.totalRevenue,
                   percentage: totalRevenue > 0 ? ((cat.totalRevenue / totalRevenue) * 100).toFixed(2) : '0.00'
@@ -277,20 +296,22 @@ const RevenuePage: React.FC = () => {
         if (data.success) {
           if (selectedCategoriesForYearly.length > 0 && data.data.categories) {
             // Seçilen kategorilerin verilerini topla
-            const totalRevenue = data.data.categories.reduce((sum: number, cat: any) => sum + cat.totalRevenue, 0);
-            const totalTransactions = data.data.categories.reduce((sum: number, cat: any) => sum + cat.totalTransactions, 0);
+            const totalRevenue = data.data.categories.reduce((sum: number, cat: CategoryData) => sum + cat.totalRevenue, 0);
+            const totalTransactions = data.data.categories.reduce((sum: number, cat: CategoryData) => sum + cat.totalTransactions, 0);
             const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
             
             // Aylık dağılımı birleştir
-            const monthlyBreakdownMap = new Map();
-            data.data.categories.forEach((cat: any) => {
-              cat.monthlyBreakdown.forEach((month: any) => {
+            const monthlyBreakdownMap = new Map<number, MonthlyBreakdownData>();
+            data.data.categories.forEach((cat: CategoryData) => {
+              cat.monthlyBreakdown?.forEach((month: MonthlyBreakdownData) => {
                 const key = month.month;
                 if (monthlyBreakdownMap.has(key)) {
                   const existing = monthlyBreakdownMap.get(key);
-                  existing.revenue += month.revenue;
-                  existing.transactionCount += month.transactionCount;
-      } else {
+                  if (existing) {
+                    existing.revenue += month.revenue;
+                    existing.transactionCount += month.transactionCount;
+                  }
+                } else {
                   monthlyBreakdownMap.set(key, {
                     month: month.month,
                     monthName: month.monthName,
@@ -394,7 +415,7 @@ const RevenuePage: React.FC = () => {
       options.push({ value, label });
       
       // Sonraki haftaya geç
-      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+      currentWeekStart = new Date(currentWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
     }
     
     setWeeklyOptions(options);
@@ -443,8 +464,8 @@ const RevenuePage: React.FC = () => {
         if (data.success) {
           if (selectedCategoriesForWeekly.length > 0 && data.data.categories) {
             // Seçilen kategorilerin verilerini topla
-            const totalRevenue = data.data.categories.reduce((sum: number, cat: any) => sum + cat.totalRevenue, 0);
-            const totalTransactions = data.data.categories.reduce((sum: number, cat: any) => sum + cat.totalTransactions, 0);
+            const totalRevenue = data.data.categories.reduce((sum: number, cat: CategoryData) => sum + cat.totalRevenue, 0);
+            const totalTransactions = data.data.categories.reduce((sum: number, cat: CategoryData) => sum + cat.totalTransactions, 0);
             const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
             
             const weeklyDataFormatted: WeeklyRevenue = {
@@ -507,8 +528,8 @@ const RevenuePage: React.FC = () => {
         if (data.success) {
           if (selectedCategoriesForDaily.length > 0 && data.data.categories) {
             // Seçilen kategorilerin verilerini topla
-            const totalRevenue = data.data.categories.reduce((sum: number, cat: any) => sum + cat.totalRevenue, 0);
-            const totalTransactions = data.data.categories.reduce((sum: number, cat: any) => sum + cat.totalTransactions, 0);
+            const totalRevenue = data.data.categories.reduce((sum: number, cat: CategoryData) => sum + cat.totalRevenue, 0);
+            const totalTransactions = data.data.categories.reduce((sum: number, cat: CategoryData) => sum + cat.totalTransactions, 0);
             const averageTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
             
             const dailyDataFormatted: WeeklyRevenue = {
@@ -954,7 +975,7 @@ const RevenuePage: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {monthlyData.transactions.map((transaction, index) => (
+                              {monthlyData.transactions.map((transaction) => (
                                 <tr key={transaction.id} className={`border-b ${theme === 'dark' ? 'border-slate-700 hover:bg-slate-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
                                   <td className={`py-3 px-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                                     {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
@@ -1198,8 +1219,8 @@ const RevenuePage: React.FC = () => {
                       Aylık Ciro Dağılımı
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {yearlyData.monthlyBreakdown.map((month, index) => (
-                        <div key={index} className="text-center">
+                                              {yearlyData.monthlyBreakdown.map((month) => (
+                                                  <div key={month.month} className="text-center">
                           <div className={`p-4 rounded-lg border ${
                             theme === 'dark' ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'
                           }`}>
@@ -1254,7 +1275,7 @@ const RevenuePage: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {yearlyData.transactions.map((transaction, index) => (
+                              {yearlyData.transactions.map((transaction) => (
                                 <tr key={transaction.id} className={`border-b ${theme === 'dark' ? 'border-slate-700 hover:bg-slate-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
                                   <td className={`py-3 px-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                                     {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
@@ -1350,8 +1371,8 @@ const RevenuePage: React.FC = () => {
                           }`}
                         >
                         <option value="">Hafta seçiniz</option>
-                        {weeklyOptions.map((option, index) => (
-                          <option key={index} value={option.value}>
+                                                  {weeklyOptions.map((option) => (
+                                                        <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
                           ))}
@@ -1511,8 +1532,8 @@ const RevenuePage: React.FC = () => {
                           Günlük Ciro Dağılımı
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                          {weeklyData.dailyBreakdown.map((day, index) => (
-                            <div key={index} className="text-center">
+                                                      {weeklyData.dailyBreakdown.map((day) => (
+                            <div key={day.day} className="text-center">
                               <div className={`p-4 rounded-lg border ${
                                 theme === 'dark' ? 'bg-slate-700/50 border-slate-600' : 'bg-gray-50 border-gray-200'
                               }`}>
@@ -1571,7 +1592,7 @@ const RevenuePage: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {weeklyData.transactions.map((transaction, index) => (
+                              {weeklyData.transactions.map((transaction) => (
                                 <tr key={transaction.id} className={`border-b ${theme === 'dark' ? 'border-slate-700 hover:bg-slate-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
                                   <td className={`py-3 px-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                                     {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
@@ -1795,8 +1816,8 @@ const RevenuePage: React.FC = () => {
                               Seçilen Gün Detayı
                     </h3>
                             <div className="flex justify-center">
-                              {dailyData.dailyBreakdown.map((day, index) => (
-                                <div key={index} className="text-center max-w-md w-full">
+                              {dailyData.dailyBreakdown.map((day) => (
+                                                                  <div key={day.day} className="text-center max-w-md w-full">
                                   <div className={`p-8 rounded-xl border-2 ${
                                     theme === 'dark' 
                                       ? 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-slate-600' 
@@ -1937,7 +1958,7 @@ const RevenuePage: React.FC = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {dailyData.transactions.map((transaction, index) => (
+                              {dailyData.transactions.map((transaction) => (
                                 <tr key={transaction.id} className={`border-b ${theme === 'dark' ? 'border-slate-700 hover:bg-slate-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
                                   <td className={`py-3 px-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                                     {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
