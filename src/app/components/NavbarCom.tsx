@@ -159,7 +159,7 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                                 isOpen ? (
                                     <button
                                         onClick={loggedOut}
-                                                                            className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                        className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
                                         ${theme === 'dark'
                                             ? 'text-white bg-gradient-to-r from-red-700 to-red-800 border-red-700 hover:from-red-800 hover:to-red-900 hover:border-red-800 hover:shadow-lg'
                                             : 'text-white bg-gradient-to-r from-red-900 to-red-950 border-red-800 hover:from-red-950 hover:to-red-950 hover:border-red-900 hover:shadow-lg'}
@@ -170,7 +170,7 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                                 ) : (
                                     <button
                                         onClick={loggedOut}
-                                                                            className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                        className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
                                         ${theme === 'dark'
                                             ? 'text-white bg-gradient-to-r from-red-700 to-red-800 border-red-700 hover:from-red-800 hover:to-red-900 hover:border-red-800 hover:shadow-lg'
                                             : 'text-white bg-gradient-to-r from-red-900 to-red-950 border-red-800 hover:from-red-950 hover:to-red-950 hover:border-red-900 hover:shadow-lg'}
@@ -183,7 +183,7 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                                 isOpen ? (
                                     <button
                                         onClick={loggedIn}
-                                                                            className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                        className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
                                         ${theme === 'dark'
                                             ? 'text-white bg-gradient-to-r from-demirhan-600 to-demirhan-700 border-demirhan-600 hover:from-demirhan-700 hover:to-demirhan-800 hover:border-demirhan-700 hover:shadow-lg'
                                             : 'text-white bg-gradient-to-r from-red-500 to-red-600 border-red-400 hover:from-red-600 hover:to-red-700 hover:border-red-500 hover:shadow-lg'}
@@ -194,7 +194,7 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                                 ) : (
                                     <button
                                         onClick={loggedIn}
-                                                                            className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
+                                        className={`text-sm font-semibold rounded-lg border flex items-center justify-center transition-all duration-300
                                         ${theme === 'dark'
                                             ? 'text-white bg-gradient-to-r from-demirhan-600 to-demirhan-700 border-demirhan-600 hover:from-demirhan-700 hover:to-demirhan-800 hover:border-demirhan-700 hover:shadow-lg'
                                             : 'text-white bg-gradient-to-r from-red-500 to-red-600 border-red-400 hover:from-red-600 hover:to-red-700 hover:border-red-500 hover:shadow-lg'}
@@ -273,7 +273,6 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                             height={80}
                             className="rounded-lg"
                         />
-
                     </div>
                     <div className="flex items-center space-x-2">
                         <button
@@ -299,6 +298,21 @@ const NavbarCom: React.FC<NavbarComProps> = ({ isOpen, setIsOpen }) => {
                                 <span className="text-lg">👨‍💼</span>
                                 <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-white'}`}>Kullanıcı</span>
                             </Link>
+                        )}
+                        {/* Mobil Çıkış Yap Butonu */}
+                        {isLoggedIn && (
+                            <button
+                                onClick={loggedOut}
+                                className={`flex items-center space-x-1 p-2 rounded-lg transition-all duration-200 ${
+                                    theme === 'dark' 
+                                        ? 'hover:bg-red-700 bg-red-600/20 border border-red-500/30' 
+                                        : 'hover:bg-red-800 bg-red-600/20 border border-red-400/30'
+                                }`}
+                                title="Çıkış Yap"
+                            >
+                                <span className="text-lg">🚪</span>
+                                <span className={`text-xs font-medium ${theme === 'dark' ? 'text-red-200' : 'text-red-100'}`}>Çıkış</span>
+                            </button>
                         )}
                     </div>
                 </div>

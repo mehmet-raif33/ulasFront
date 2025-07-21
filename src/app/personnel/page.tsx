@@ -7,6 +7,7 @@ import { selectIsLoggedIn, selectUser } from "../redux/sliceses/authSlices";
 import Link from "next/link";
 import { motion } from 'framer-motion';
 import { getPersonnelApi, createPersonnelApi } from '../api';
+import { useToast } from '../AppLayoutClient';
 
 // Personnel interface matching backend schema
 interface Personnel {
@@ -79,6 +80,7 @@ const PersonnelPage: React.FC = () => {
   const isLoggedIn = useSelector(selectIsLoggedIn);
   const user = useSelector(selectUser);
   const router = useRouter();
+  const { showToast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -184,11 +186,13 @@ const PersonnelPage: React.FC = () => {
       // Form validation
       if (!formData.full_name.trim()) {
         setError('Ad Soyad alanı zorunludur');
+        showToast('Ad Soyad alanı zorunludur', 'error');
         return;
       }
       
       if (!formData.email.trim()) {
         setError('E-posta alanı zorunludur');
+        showToast('E-posta alanı zorunludur', 'error');
         return;
       }
       
@@ -196,6 +200,7 @@ const PersonnelPage: React.FC = () => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email.trim())) {
         setError('Geçerli bir e-posta adresi giriniz');
+        showToast('Geçerli bir e-posta adresi giriniz', 'error');
         return;
       }
       
@@ -212,6 +217,7 @@ const PersonnelPage: React.FC = () => {
       
       if (formData.username && formData.password && formData.password.length < 6) {
         setError('Şifre en az 6 karakter olmalı');
+        showToast('Şifre en az 6 karakter olmalı', 'error');
         return;
       }
 
@@ -241,7 +247,7 @@ const PersonnelPage: React.FC = () => {
         setPersonnel(prev => [...prev, response]);
       }
       
-      alert("Personel başarıyla eklendi!");
+      showToast("Personel başarıyla eklendi!", 'success');
       setShowAddForm(false);
       
       setFormData({
@@ -262,6 +268,7 @@ const PersonnelPage: React.FC = () => {
         message += `: ${(error as { message?: string }).message}`;
       }
       setError(message);
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }

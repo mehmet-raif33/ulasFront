@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { login, setError, setLoading } from "../redux/sliceses/authSlices";
@@ -11,22 +11,41 @@ const LoginForm: React.FC = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const theme = useSelector((state: RootState) => state.theme.theme);
+  const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoadingState] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Eğer zaten giriş yapılmışsa dashboard'a yönlendir
+  useEffect(() => {
+    if (isLoggedIn) {
+      router.push('/');
+    }
+  }, [isLoggedIn, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Eğer zaten submit ediliyorsa tekrar çalıştırma
+    if (isSubmitting || loading) {
+      return;
+    }
+
     setFormError(null);
     setSuccessMessage(null);
+    setIsSubmitting(true);
     dispatch(setLoading(true));
     setLoadingState(true);
+    
     try {
       const data = await loginApi({ username, password });
+      
       // Token'ı localStorage'a kaydet
       localStorage.setItem("token", data.token);
+      
       // Kullanıcı bilgisini Redux'a kaydet
       const userData = {
         id: data.user.id,
@@ -34,6 +53,7 @@ const LoginForm: React.FC = () => {
         name: data.user.username || data.user.name || "",
         role: data.user.role === "admin" ? "admin" : "user" as "admin" | "user",
       };
+      
       dispatch(login(userData));
       
       // Diğer sekmelere login mesajı gönder
@@ -46,6 +66,7 @@ const LoginForm: React.FC = () => {
       setTimeout(() => {
         router.push('/');
       }, 1500);
+      
     } catch (err: unknown) {
       let message = "Bir hata oluştu";
       if (typeof err === "object" && err && "message" in err) {
@@ -58,6 +79,7 @@ const LoginForm: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
       setLoadingState(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -70,38 +92,43 @@ const LoginForm: React.FC = () => {
       <h2 className={`text-2xl font-bold mb-4 text-center transition-colors duration-300 ${
         theme === 'dark' ? 'text-white' : 'text-gray-900'
       }`}>Giriş Yap</h2>
-              <div>
-          <label className={`block mb-1 font-medium transition-colors duration-300 ${
-            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-          }`}>Kullanıcı Adı veya Email</label>
-          <input
-            type="text"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            className={`w-full border rounded-lg px-3 py-2 backdrop-blur-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              theme === 'dark' 
-                ? 'border-slate-600 bg-slate-700/80 text-white placeholder-gray-400 focus:ring-blue-400' 
-                : 'border-gray-300 bg-white/80 text-gray-900 placeholder-gray-500 focus:ring-blue-500'
-            }`}
-            required
-          />
-        </div>
-        <div>
-          <label className={`block mb-1 font-medium transition-colors duration-300 ${
-            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-          }`}>Şifre</label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className={`w-full border rounded-lg px-3 py-2 backdrop-blur-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              theme === 'dark' 
-                ? 'border-slate-600 bg-slate-700/80 text-white placeholder-gray-400 focus:ring-blue-400' 
-                : 'border-gray-300 bg-white/80 text-gray-900 placeholder-gray-500 focus:ring-blue-500'
-            }`}
-            required
-          />
-        </div>
+      
+      <div>
+        <label className={`block mb-1 font-medium transition-colors duration-300 ${
+          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+        }`}>Kullanıcı Adı veya Email</label>
+        <input
+          type="text"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          className={`w-full border rounded-lg px-3 py-2 backdrop-blur-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            theme === 'dark' 
+              ? 'border-slate-600 bg-slate-700/80 text-white placeholder-gray-400 focus:ring-blue-400' 
+              : 'border-gray-300 bg-white/80 text-gray-900 placeholder-gray-500 focus:ring-blue-500'
+          }`}
+          required
+          disabled={loading || isSubmitting}
+        />
+      </div>
+      
+      <div>
+        <label className={`block mb-1 font-medium transition-colors duration-300 ${
+          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+        }`}>Şifre</label>
+        <input
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          className={`w-full border rounded-lg px-3 py-2 backdrop-blur-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            theme === 'dark' 
+              ? 'border-slate-600 bg-slate-700/80 text-white placeholder-gray-400 focus:ring-blue-400' 
+              : 'border-gray-300 bg-white/80 text-gray-900 placeholder-gray-500 focus:ring-blue-500'
+          }`}
+          required
+          disabled={loading || isSubmitting}
+        />
+      </div>
+      
       {formError && (
         <div className={`border rounded-lg p-4 mb-4 transition-all duration-300 ${
           theme === 'dark' 
@@ -153,16 +180,17 @@ const LoginForm: React.FC = () => {
           </div>
         </div>
       )}
+      
       <button
         type="submit"
         className={`w-full text-white py-3 rounded-lg transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
           theme === 'dark' 
             ? 'bg-blue-500 hover:bg-blue-600' 
             : 'bg-blue-600 hover:bg-blue-700'
-        }`}
-        disabled={loading}
+        } ${(loading || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        disabled={loading || isSubmitting}
       >
-        {loading ? "Giriş Yapılıyor..." : "Giriş Yap"}
+        {loading || isSubmitting ? "Giriş Yapılıyor..." : "Giriş Yap"}
       </button>
     </form>
   );

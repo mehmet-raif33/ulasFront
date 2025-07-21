@@ -6,6 +6,9 @@ import { selectIsLoggedIn, selectUser } from '../redux/sliceses/authSlices';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { getTransactionCategoriesApi, createTransactionCategoryApi, updateTransactionCategoryApi, deleteTransactionCategoryApi } from '../api';
+import { useToast } from '../AppLayoutClient';
+import ConfirmModal from '../components/ConfirmModal';
+import { useConfirmModal } from '../hooks/useConfirmModal';
 
 // Transaction Category interface
 interface TransactionCategory {
@@ -21,15 +24,17 @@ const TransactionCategoriesPage: React.FC = () => {
     const isLoggedIn = useSelector(selectIsLoggedIn);
     const user = useSelector(selectUser);
     const router = useRouter();
+    const { showToast } = useToast();
+    const { modalState, showConfirmModal, hideConfirmModal, handleConfirm } = useConfirmModal();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
     const [categories, setCategories] = useState<TransactionCategory[]>([]);
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState<TransactionCategory | null>(null);
     const [formData, setFormData] = useState({
         name: ''
     });
+
+
 
     // Giriş yapmamış kullanıcıları landing page'e yönlendir
     useEffect(() => {
@@ -52,7 +57,6 @@ const TransactionCategoriesPage: React.FC = () => {
                 try {
                     const token = localStorage.getItem('token');
                     if (!token) {
-                        setError('Token bulunamadı');
                         return;
                     }
                     setLoading(true);
@@ -61,14 +65,14 @@ const TransactionCategoriesPage: React.FC = () => {
                     setCategories(response.data || []);
                 } catch (error: unknown) {
                     console.error('Error loading categories:', error);
-                    setError('Kategoriler yüklenirken hata oluştu');
+                    showToast('Kategoriler yüklenirken hata oluştu', 'error');
                 } finally {
                     setLoading(false);
                 }
             };
             loadCategories();
         }
-    }, [isLoggedIn]);
+    }, [isLoggedIn, showToast]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -86,12 +90,10 @@ const TransactionCategoriesPage: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setError(null);
-        setSuccess(null);
 
         try {
             if (!formData.name.trim()) {
-                setError('İşlem türü adı zorunludur');
+                showToast('İşlem türü adı zorunludur', 'error');
                 return;
             }
 
@@ -108,14 +110,14 @@ const TransactionCategoriesPage: React.FC = () => {
                 setCategories(prev => prev.map(cat => 
                     cat.id === editingCategory.id ? response.data : cat
                 ));
-                setSuccess('İşlem türü başarıyla güncellendi!');
+                showToast('İşlem türü başarıyla güncellendi!', 'success');
             } else {
                 // Create new category
                 const response = await createTransactionCategoryApi(token, {
                     name: formData.name.trim()
                 });
                 setCategories(prev => [...prev, response.data]);
-                setSuccess('İşlem türü başarıyla eklendi!');
+                showToast('İşlem türü başarıyla eklendi!', 'success');
             }
             resetForm();
         } catch (error: unknown) {
@@ -124,7 +126,7 @@ const TransactionCategoriesPage: React.FC = () => {
             if (error && typeof error === 'object' && 'message' in error) {
                 message += `: ${(error as { message?: string }).message}`;
             }
-            setError(message);
+            showToast(message, 'error');
         } finally {
             setLoading(false);
         }
@@ -140,24 +142,35 @@ const TransactionCategoriesPage: React.FC = () => {
 
     const handleDelete = async (categoryId: string) => {
         const categoryToDelete = categories.find(cat => cat.id === categoryId);
-        if (!confirm(`"${categoryToDelete?.name}" işlem türünü silmek istediğinizden emin misiniz?\n\nBu işlem türüne ait işlemler varsa silinemez.`)) {
-            return;
-        }
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('Token bulunamadı');
-            }
-            await deleteTransactionCategoryApi(token, categoryId);
-            setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-            setSuccess('İşlem türü başarıyla silindi!');
-        } catch (error: unknown) {
-            console.error('Error deleting category:', error);
-            let message = 'İşlem türü silinirken hata oluştu';
-            if (error && typeof error === 'object' && 'message' in error) {
-                message = (error as { message?: string }).message || message;
-            }
-            setError(message);
+        if (categoryToDelete) {
+            showConfirmModal(
+                'İşlem Türünü Sil',
+                `"${categoryToDelete.name}" işlem türünü silmek istediğinizden emin misiniz?\n\nBu işlem türüne ait işlemler varsa silinemez.`,
+                async () => {
+                    try {
+                        const token = localStorage.getItem('token');
+                        if (!token) {
+                            throw new Error('Token bulunamadı');
+                        }
+                        await deleteTransactionCategoryApi(token, categoryToDelete.id);
+                        setCategories(prev => prev.filter(cat => cat.id !== categoryToDelete.id));
+                        showToast('İşlem türü başarıyla silindi!', 'success');
+                    } catch (error: unknown) {
+                        console.error('Error deleting category:', error);
+                        let message = 'İşlem türü silinirken hata oluştu';
+                        if (error && typeof error === 'object' && 'message' in error) {
+                            message = (error as { message?: string }).message || message;
+                        }
+                        showToast(message, 'error');
+                    }
+                },
+                {
+                    confirmText: 'Sil',
+                    cancelText: 'İptal',
+                    type: 'danger',
+                    icon: '🗑️'
+                }
+            );
         }
     };
 
@@ -193,27 +206,7 @@ const TransactionCategoriesPage: React.FC = () => {
             </motion.div>
 
             {/* Success Message */}
-            {success && (
-                <motion.div 
-                    className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                >
-                    {success}
-                </motion.div>
-            )}
-
             {/* Error Message */}
-            {error && (
-                <motion.div 
-                    className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                >
-                    {error}
-                </motion.div>
-            )}
-
             {/* Loading State */}
             {loading && categories.length === 0 && (
                 <motion.div 
@@ -384,6 +377,19 @@ const TransactionCategoriesPage: React.FC = () => {
                     </p>
                 </motion.div>
             )}
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={modalState.isOpen}
+                onClose={hideConfirmModal}
+                onConfirm={handleConfirm}
+                title={modalState.title}
+                message={modalState.message}
+                confirmText={modalState.confirmText}
+                cancelText={modalState.cancelText}
+                type={modalState.type}
+                icon={modalState.icon}
+            />
         </div>
     );
 };

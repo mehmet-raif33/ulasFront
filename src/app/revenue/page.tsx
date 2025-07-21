@@ -758,46 +758,48 @@ const RevenuePage: React.FC = () => {
                 <div className={`p-4 rounded-lg mb-6 border ${
                   theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
                 } shadow-sm`}>
-                  <div className="flex flex-wrap gap-4 items-center">
-                    <div>
-                      <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
-                        Yıl
-                      </label>
-                      <select
-                        value={selectedYear}
-                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                        className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-demirhan-500 ${
-                          theme === 'dark' 
-                            ? 'bg-slate-700 border-slate-600 text-gray-200' 
-                            : 'bg-white border-gray-300 text-gray-900'
-                        }`}
-                      >
-                        {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                          <option key={year} value={year}>{year}</option>
-                        ))}
-                      </select>
+                  <div className="flex flex-col lg:flex-row gap-4 items-start">
+                    <div className="flex flex-col gap-4 w-full lg:w-auto">
+                      <div>
+                        <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          Yıl
+                        </label>
+                        <select
+                          value={selectedYear}
+                          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                          className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-demirhan-500 w-full ${
+                            theme === 'dark' 
+                              ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
+                        >
+                          {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                          Ay
+                        </label>
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                          className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-demirhan-500 w-full ${
+                            theme === 'dark' 
+                              ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
+                        >
+                          {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                            <option key={month} value={month}>
+                              {new Date(2024, month - 1).toLocaleDateString('tr-TR', { month: 'long' })}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
-                        Ay
-                      </label>
-                      <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                        className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-demirhan-500 ${
-                          theme === 'dark' 
-                            ? 'bg-slate-700 border-slate-600 text-gray-200' 
-                            : 'bg-white border-gray-300 text-gray-900'
-                        }`}
-                      >
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                          <option key={month} value={month}>
-                            {new Date(2024, month - 1).toLocaleDateString('tr-TR', { month: 'long' })}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 w-full lg:w-auto">
                       <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                         Kategoriler
                       </label>
@@ -1026,15 +1028,15 @@ const RevenuePage: React.FC = () => {
                 <div className={`p-4 rounded-lg mb-6 border ${
                   theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
                 } shadow-sm`}>
-                  <div className="flex flex-wrap gap-4 items-center">
-                    <div>
+                  <div className="flex flex-col lg:flex-row gap-4 items-start">
+                    <div className="w-full lg:w-auto">
                       <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                         Yıl
                       </label>
                       <select
                         value={selectedYearForYearly}
                         onChange={(e) => setSelectedYearForYearly(parseInt(e.target.value))}
-                        className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-demirhan-500 ${
+                        className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-demirhan-500 w-full ${
                           theme === 'dark' 
                             ? 'bg-slate-700 border-slate-600 text-gray-200' 
                             : 'bg-white border-gray-300 text-gray-900'
@@ -1045,7 +1047,7 @@ const RevenuePage: React.FC = () => {
                         ))}
                       </select>
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 w-full lg:w-auto">
                       <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                         Kategoriler
                       </label>
@@ -1326,59 +1328,61 @@ const RevenuePage: React.FC = () => {
                 <div className={`p-4 rounded-lg mb-6 border ${
                   theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
                 } shadow-sm`}>
-                    <div className="flex flex-wrap gap-4 items-center">
-                    <div className="flex-1 min-w-0">
-                        <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
-                        Yıl Seçimi
-                        </label>
-                        <select
-                        value={selectedYearForWeekly}
-                        onChange={(e) => {
-                          const newYear = parseInt(e.target.value);
-                          setSelectedYearForWeekly(newYear);
-                          generateWeeklyOptions(newYear);
-                          setSelectedWeek(''); // Hafta seçimini sıfırla
-                        }}
-                        className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 w-full ${
-                            theme === 'dark' 
-                            ? 'bg-slate-700 border-slate-600 text-gray-200' 
-                              : 'bg-white border-gray-300 text-gray-900'
-                          }`}
-                        >
-                        {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
-                        </select>
-                      </div>
-                    <div className="flex-1 min-w-0">
-                        <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
-                        Hafta Seçimi
-                        </label>
-                        <select
-                        value={selectedWeek}
-                        onChange={(e) => {
-                          const [startDate, endDate] = e.target.value.split('_');
-                          setSelectedWeek(e.target.value);
-                          setSelectedStartDate(startDate);
-                          setSelectedEndDate(endDate);
-                        }}
-                        className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 w-full ${
-                            theme === 'dark' 
-                            ? 'bg-slate-700 border-slate-600 text-gray-200' 
-                              : 'bg-white border-gray-300 text-gray-900'
-                          }`}
-                        >
-                        <option value="">Hafta seçiniz</option>
-                                                  {weeklyOptions.map((option) => (
-                                                        <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                          ))}
-                        </select>
-                      </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex flex-col lg:flex-row gap-4 items-start">
+                    <div className="flex flex-col gap-4 w-full lg:w-auto">
+                        <div className="flex-1 min-w-0">
+                            <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                            Yıl Seçimi
+                            </label>
+                            <select
+                            value={selectedYearForWeekly}
+                            onChange={(e) => {
+                              const newYear = parseInt(e.target.value);
+                              setSelectedYearForWeekly(newYear);
+                              generateWeeklyOptions(newYear);
+                              setSelectedWeek(''); // Hafta seçimini sıfırla
+                            }}
+                            className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 w-full ${
+                                theme === 'dark' 
+                                ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                            >
+                            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            ))}
+                            </select>
+                          </div>
+                        <div className="flex-1 min-w-0">
+                            <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                            Hafta Seçimi
+                            </label>
+                            <select
+                            value={selectedWeek}
+                            onChange={(e) => {
+                              const [startDate, endDate] = e.target.value.split('_');
+                              setSelectedWeek(e.target.value);
+                              setSelectedStartDate(startDate);
+                              setSelectedEndDate(endDate);
+                            }}
+                            className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 w-full ${
+                                theme === 'dark' 
+                                ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                            >
+                            <option value="">Hafta seçiniz</option>
+                                                          {weeklyOptions.map((option) => (
+                                                                <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                              ))}
+                            </select>
+                          </div>
+                    </div>
+                    <div className="flex-1 min-w-0 w-full lg:w-auto">
                           <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                         Kategoriler
                           </label>
@@ -1643,8 +1647,8 @@ const RevenuePage: React.FC = () => {
                 <div className={`p-4 rounded-lg mb-6 border ${
                   theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
                 } shadow-sm`}>
-                  <div className="flex flex-wrap gap-4 items-center">
-                        <div>
+                  <div className="flex flex-col lg:flex-row gap-4 items-start">
+                        <div className="w-full lg:w-auto">
                           <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                         Tarih Seçimi
                           </label>
@@ -1652,14 +1656,14 @@ const RevenuePage: React.FC = () => {
                             type="date"
                         value={selectedDailyDate}
                         onChange={(e) => setSelectedDailyDate(e.target.value)}
-                        className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                        className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 w-full ${
                               theme === 'dark' 
                             ? 'bg-slate-700 border-slate-600 text-gray-200' 
                                 : 'bg-white border-gray-300 text-gray-900'
                             }`}
                           />
                         </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 w-full lg:w-auto">
                         <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                         Kategoriler
                         </label>

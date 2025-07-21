@@ -7,6 +7,7 @@ import { selectIsLoggedIn } from '../redux/sliceses/authSlices';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { getVehiclesApi, createVehicleApi } from '../api';
+import { useToast } from '../AppLayoutClient';
 
 // Vehicle interface matching backend schema
 interface Vehicle {
@@ -25,6 +26,7 @@ const VehiclesPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
     const isLoggedIn = useSelector(selectIsLoggedIn);
     const router = useRouter();
+    const { showToast } = useToast();
     const [showAddForm, setShowAddForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
@@ -46,20 +48,6 @@ const VehiclesPage: React.FC = () => {
         customer_email: '',
         customer_phone: ''
     });
-
-    // Giriş yapmamış kullanıcıları landing page'e yönlendir
-    useEffect(() => {
-        if (!isLoggedIn) {
-            router.push('/landing');
-        }
-    }, [isLoggedIn, router]);
-
-    // Load vehicles on component mount
-    useEffect(() => {
-        if (isLoggedIn) {
-            loadVehicles(1, true);
-        }
-    }, [isLoggedIn]);
 
     // Load vehicles function
     const loadVehicles = useCallback(async (page: number = 1, reset: boolean = false) => {
@@ -93,6 +81,19 @@ const VehiclesPage: React.FC = () => {
         }
     }, [searchTerm, pagination.limit]);
 
+    // Giriş yapmamış kullanıcıları landing page'e yönlendir
+    useEffect(() => {
+        if (!isLoggedIn) {
+            router.push('/landing');
+        }
+    }, [isLoggedIn, router]);
+
+    useEffect(() => {
+        if (isLoggedIn) {
+            loadVehicles(1, true);
+        }
+    }, [isLoggedIn, loadVehicles]);
+
     // Load more vehicles (infinite scroll)
     const loadMore = useCallback(() => {
         if (!loading && hasMore) {
@@ -105,7 +106,7 @@ const VehiclesPage: React.FC = () => {
         if (isLoggedIn) {
             loadVehicles(1, true);
         }
-    }, [searchTerm, isLoggedIn]);
+    }, [searchTerm, isLoggedIn, loadVehicles]);
 
     // Infinite scroll observer
     useEffect(() => {
@@ -156,21 +157,25 @@ const VehiclesPage: React.FC = () => {
             // Form validasyonu
             if (!formData.plate.trim()) {
                 setError('Plaka alanı zorunludur');
+                showToast('Plaka alanı zorunludur', 'error');
                 return;
             }
             
             if (!formData.brand.trim()) {
                 setError('Marka alanı zorunludur');
+                showToast('Marka alanı zorunludur', 'error');
                 return;
             }
             
             if (!formData.model.trim()) {
                 setError('Model alanı zorunludur');
+                showToast('Model alanı zorunludur', 'error');
                 return;
             }
             
             if (!formData.year || parseInt(formData.year) < 1900 || parseInt(formData.year) > new Date().getFullYear() + 1) {
                 setError('Geçerli bir yıl giriniz');
+                showToast('Geçerli bir yıl giriniz', 'error');
                 return;
             }
 
@@ -197,7 +202,7 @@ const VehiclesPage: React.FC = () => {
             setVehicles(prev => [...prev, response.data]);
             
 
-            alert('Araç başarıyla eklendi!');
+            showToast('Araç başarıyla eklendi!', 'success');
             setShowAddForm(false);
             setError(null);
             setLoading(false);
@@ -218,6 +223,7 @@ const VehiclesPage: React.FC = () => {
                 message += `: ${(error as { message?: string }).message}`;
             }
             setError(message);
+            showToast(message, 'error');
             setLoading(false);
         }
     };

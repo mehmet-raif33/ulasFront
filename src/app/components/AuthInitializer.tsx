@@ -1,19 +1,29 @@
 "use client";
-import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { restoreAuth, setLoading, logout, setInitialized } from '../redux/sliceses/authSlices';
 import { getProfileApi } from '../api';
 import { useState } from 'react';
 import { tabComm, MESSAGE_TYPES } from '../utils/broadcastChannel';
+import { RootState } from '../redux/store';
 
 const AuthInitializer = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const isInitialized = useSelector((state: RootState) => state.auth.isInitialized);
+  const initializationRef = useRef(false);
 
   useEffect(() => {
     const initializeAuth = async () => {
+      // Eğer zaten initialize edildiyse tekrar çalıştırma
+      if (isInitialized || initializationRef.current) {
+        return;
+      }
+
+      initializationRef.current = true;
+
       if (typeof window !== 'undefined') {
         const token = localStorage.getItem('token');
         const currentPath = window.location.pathname;
@@ -38,17 +48,12 @@ const AuthInitializer = () => {
                 router.push('/');
               }
             }
-          } catch (error: unknown) {
-            console.error('Token validation failed:', error);
-            // Token geçersizse localStorage'dan sil
+          } catch (error) {
+            console.error('Token validation error:', error);
+            // Token geçersiz, kullanıcıyı logout yap
             localStorage.removeItem('token');
-            const errorMessage = error && typeof error === 'object' && 'message' in error ? (error as { message?: string }).message || 'Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.' : 'Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.';
-            setErrorMessage(errorMessage);
-            
-            // Korumalı sayfalardaysa landing page'e yönlendir (landing ve auth hariç)
-            if (currentPath !== '/landing' && currentPath !== '/auth') {
-              router.push('/landing');
-            }
+            dispatch(logout());
+            // broadcastLogout(); // This line was removed from the new_code, so it's removed here.
           } finally {
             dispatch(setLoading(false));
             dispatch(setInitialized(true));
@@ -65,7 +70,7 @@ const AuthInitializer = () => {
     };
 
     initializeAuth();
-  }, [dispatch, router]);
+  }, [dispatch, router, isInitialized]);
 
   // Sekme arası iletişim için listener'ları kur
   useEffect(() => {
@@ -107,7 +112,7 @@ const AuthInitializer = () => {
 
   useEffect(() => {
     if (errorMessage) {
-      alert(errorMessage);
+      console.error(errorMessage);
       setErrorMessage(null);
     }
   }, [errorMessage]);

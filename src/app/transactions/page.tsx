@@ -30,9 +30,6 @@ interface Transaction {
   status_changed_by_name?: string;
 }
 
-// Vehicle interface
-
-
 // Transaction Category interface
 interface TransactionCategory {
   id: string;
@@ -48,7 +45,6 @@ const TransactionsPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-
     const [categories, setCategories] = useState<TransactionCategory[]>([]);
     
     // Filter states
@@ -179,6 +175,37 @@ const TransactionsPage: React.FC = () => {
     // Calculate totals for filtered transactions
     const totalAmount = filteredTransactions.reduce((sum, transaction) => sum + parseFloat(transaction.amount), 0);
     const averageAmount = filteredTransactions.length > 0 ? totalAmount / filteredTransactions.length : 0;
+
+    // Get status color and text
+    const getStatusInfo = (status: string | undefined) => {
+        switch (status) {
+            case 'pending':
+                return {
+                    text: 'Beklemede',
+                    color: theme === 'dark' ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-800'
+                };
+            case 'in_progress':
+                return {
+                    text: 'Devam Ediyor',
+                    color: theme === 'dark' ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
+                };
+            case 'completed':
+                return {
+                    text: 'Tamamlandı',
+                    color: theme === 'dark' ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'
+                };
+            case 'cancelled':
+                return {
+                    text: 'İptal Edildi',
+                    color: theme === 'dark' ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800'
+                };
+            default:
+                return {
+                    text: 'Bilinmiyor',
+                    color: theme === 'dark' ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-800'
+                };
+        }
+    };
 
     // Giriş yapmamış kullanıcılar için loading göster
     if (!isLoggedIn) {
@@ -342,8 +369,8 @@ const TransactionsPage: React.FC = () => {
                         Filtreler
                     </h2>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* Vehicle Plate Filter */}
+                    <div className="space-y-4">
+                        {/* Vehicle Plate Filter - Full Width */}
                         <div>
                             <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                                 Araç Plakası
@@ -362,137 +389,140 @@ const TransactionsPage: React.FC = () => {
                             />
                         </div>
 
-                        {/* Category Filter */}
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                İşlem Türü
-                            </label>
-                            <select
-                                name="category_id"
-                                value={filters.category_id}
-                                onChange={handleFilterChange}
-                                className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                    theme === 'dark' 
-                                        ? 'border-slate-600 bg-slate-700 text-white' 
-                                        : 'border-gray-300 bg-white text-gray-900'
-                                }`}
-                            >
-                                <option value="">Tüm İşlem Türleri</option>
-                                {categories.map((category) => (
-                                    <option key={category.id} value={category.id}>
-                                        {category.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Two Column Grid for Other Filters */}
+                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Category Filter */}
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    İşlem Türü
+                                </label>
+                                <select
+                                    name="category_id"
+                                    value={filters.category_id}
+                                    onChange={handleFilterChange}
+                                    className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                        theme === 'dark' 
+                                            ? 'border-slate-600 bg-slate-700 text-white' 
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                >
+                                    <option value="">Tüm İşlem Türleri</option>
+                                    {categories.map((category) => (
+                                        <option key={category.id} value={category.id}>
+                                            {category.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-                        {/* Status Filter */}
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Durum
-                            </label>
-                            <select
-                                name="status"
-                                value={filters.status}
-                                onChange={handleFilterChange}
-                                className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                    theme === 'dark' 
-                                        ? 'border-slate-600 bg-slate-700 text-white' 
-                                        : 'border-gray-300 bg-white text-gray-900'
-                                }`}
-                            >
-                                <option value="">Tüm Durumlar</option>
-                                <option value="pending">Beklemede</option>
-                                <option value="in_progress">Devam Ediyor</option>
-                                <option value="completed">Tamamlandı</option>
-                                <option value="cancelled">İptal Edildi</option>
-                            </select>
-                        </div>
+                            {/* Status Filter */}
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Durum
+                                </label>
+                                <select
+                                    name="status"
+                                    value={filters.status}
+                                    onChange={handleFilterChange}
+                                    className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                        theme === 'dark' 
+                                            ? 'border-slate-600 bg-slate-700 text-white' 
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                >
+                                    <option value="">Tüm Durumlar</option>
+                                    <option value="pending">Beklemede</option>
+                                    <option value="in_progress">Devam Ediyor</option>
+                                    <option value="completed">Tamamlandı</option>
+                                    <option value="cancelled">İptal Edildi</option>
+                                </select>
+                            </div>
 
-                        {/* Date From Filter */}
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Başlangıç Tarihi
-                            </label>
-                            <input
-                                type="date"
-                                name="date_from"
-                                value={filters.date_from}
-                                onChange={handleFilterChange}
-                                className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                    theme === 'dark' 
-                                        ? 'border-slate-600 bg-slate-700 text-white' 
-                                        : 'border-gray-300 bg-white text-gray-900'
-                                }`}
-                            />
-                        </div>
+                            {/* Date From Filter */}
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Başlangıç Tarihi
+                                </label>
+                                <input
+                                    type="date"
+                                    name="date_from"
+                                    value={filters.date_from}
+                                    onChange={handleFilterChange}
+                                    className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                        theme === 'dark' 
+                                            ? 'border-slate-600 bg-slate-700 text-white' 
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                />
+                            </div>
 
-                        {/* Date To Filter */}
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Bitiş Tarihi
-                            </label>
-                            <input
-                                type="date"
-                                name="date_to"
-                                value={filters.date_to}
-                                onChange={handleFilterChange}
-                                className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                    theme === 'dark' 
-                                        ? 'border-slate-600 bg-slate-700 text-white' 
-                                        : 'border-gray-300 bg-white text-gray-900'
-                                }`}
-                            />
-                        </div>
+                            {/* Date To Filter */}
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Bitiş Tarihi
+                                </label>
+                                <input
+                                    type="date"
+                                    name="date_to"
+                                    value={filters.date_to}
+                                    onChange={handleFilterChange}
+                                    className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                        theme === 'dark' 
+                                            ? 'border-slate-600 bg-slate-700 text-white' 
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                />
+                            </div>
 
-                        {/* Min Amount Filter */}
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Minimum Tutar (₺)
-                            </label>
-                            <input
-                                type="number"
-                                name="min_amount"
-                                value={filters.min_amount}
-                                onChange={handleFilterChange}
-                                min="0"
-                                step="0.01"
-                                className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                    theme === 'dark' 
-                                        ? 'border-slate-600 bg-slate-700 text-white' 
-                                        : 'border-gray-300 bg-white text-gray-900'
-                                }`}
-                                placeholder="0"
-                            />
-                        </div>
+                            {/* Min Amount Filter */}
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Min Tutar (₺)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="min_amount"
+                                    value={filters.min_amount}
+                                    onChange={handleFilterChange}
+                                    min="0"
+                                    step="0.01"
+                                    className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                        theme === 'dark' 
+                                            ? 'border-slate-600 bg-slate-700 text-white' 
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                    placeholder="0"
+                                />
+                            </div>
 
-                        {/* Max Amount Filter */}
-                        <div>
-                            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Maksimum Tutar (₺)
-                            </label>
-                            <input
-                                type="number"
-                                name="max_amount"
-                                value={filters.max_amount}
-                                onChange={handleFilterChange}
-                                min="0"
-                                step="0.01"
-                                className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                    theme === 'dark' 
-                                        ? 'border-slate-600 bg-slate-700 text-white' 
-                                        : 'border-gray-300 bg-white text-gray-900'
-                                }`}
-                                placeholder="∞"
-                            />
+                            {/* Max Amount Filter */}
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Max Tutar (₺)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="max_amount"
+                                    value={filters.max_amount}
+                                    onChange={handleFilterChange}
+                                    min="0"
+                                    step="0.01"
+                                    className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                        theme === 'dark' 
+                                            ? 'border-slate-600 bg-slate-700 text-white' 
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                    placeholder="∞"
+                                />
+                            </div>
                         </div>
                     </div>
 
                     {/* Clear Filters Button */}
-                    <div className="mt-4 flex justify-end">
+                    <div className="mt-4">
                         <button
                             onClick={clearFilters}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                            className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                                 theme === 'dark'
                                     ? 'bg-gray-600 hover:bg-gray-700 text-white'
                                     : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
@@ -510,139 +540,224 @@ const TransactionsPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Transactions Table */}
+                {/* Transactions Display */}
                 {!loading && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 0.5 }}
-                        className={`rounded-xl shadow-lg border overflow-hidden ${
-                            theme === 'dark' 
-                                ? 'bg-slate-800/50 border-slate-700' 
-                                : 'bg-white/80 border-gray-200'
-                        }`}
                     >
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className={`${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
-                                    <tr>
-                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                                            Tarih
-                                        </th>
-                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                                            Araç
-                                        </th>
-                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                                            İşlem Türü
-                                        </th>
-                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                                            Açıklama
-                                        </th>
-                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                                            Durum
-                                        </th>
-                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                                            Tutar
-                                        </th>
-                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                                            Personel
-                                        </th>
-                                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                                            İşlemler
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className={`divide-y ${theme === 'dark' ? 'divide-slate-700' : 'divide-gray-200'}`}>
-                                    {filteredTransactions.map((transaction, index) => (
-                                        <motion.tr
-                                            key={transaction.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.2, delay: index * 0.05 }}
-                                            className={`${theme === 'dark' ? 'hover:bg-slate-700' : 'hover:bg-gray-50'} transition-colors duration-200`}
-                                        >
-                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                                                {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
-                                            </td>
-                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                                                <div>
-                                                    <div className="font-medium">{transaction.vehicle_plate || 'N/A'}</div>
-                                                    <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                        {transaction.vehicle_brand} {transaction.vehicle_model}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                    theme === 'dark' 
-                                                        ? 'bg-blue-900 text-blue-200' 
-                                                        : 'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                    {transaction.category_name || 'N/A'}
-                                                </span>
-                                            </td>
-                                            <td className={`px-6 py-4 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                                                <div className="max-w-xs truncate" title={transaction.description}>
-                                                    {transaction.description || 'Açıklama yok'}
-                                                </div>
-                                            </td>
-                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                    transaction.status === 'pending' 
-                                                        ? theme === 'dark' ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-800'
-                                                        : transaction.status === 'in_progress'
-                                                        ? theme === 'dark' ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-800'
-                                                        : transaction.status === 'completed'
-                                                        ? theme === 'dark' ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'
-                                                        : transaction.status === 'cancelled'
-                                                        ? theme === 'dark' ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800'
-                                                        : theme === 'dark' ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                    {transaction.status === 'pending' ? 'Beklemede' : 
-                                                     transaction.status === 'in_progress' ? 'Devam Ediyor' : 
-                                                     transaction.status === 'completed' ? 'Tamamlandı' : 
-                                                     transaction.status === 'cancelled' ? 'İptal Edildi' : 
-                                                     'Bilinmiyor'}
-                                                </span>
-                                            </td>
-                                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                        {/* Desktop Table View */}
+                        <div className="hidden lg:block">
+                            <div className={`rounded-xl shadow-lg border overflow-hidden ${
+                                theme === 'dark' 
+                                    ? 'bg-slate-800/50 border-slate-700' 
+                                    : 'bg-white/80 border-gray-200'
+                            }`}>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className={`${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                            <tr>
+                                                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    Tarih
+                                                </th>
+                                                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    Araç
+                                                </th>
+                                                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    İşlem Türü
+                                                </th>
+                                                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    Açıklama
+                                                </th>
+                                                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    Durum
+                                                </th>
+                                                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    Tutar
+                                                </th>
+                                                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    Personel
+                                                </th>
+                                                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                    İşlemler
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className={`divide-y ${theme === 'dark' ? 'divide-slate-700' : 'divide-gray-200'}`}>
+                                            {filteredTransactions.map((transaction, index) => (
+                                                <motion.tr
+                                                    key={transaction.id}
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                                                    className={`${theme === 'dark' ? 'hover:bg-slate-700' : 'hover:bg-gray-50'} transition-colors duration-200`}
+                                                >
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                        {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
+                                                    </td>
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                        <div>
+                                                            <div className="font-medium">{transaction.vehicle_plate || 'N/A'}</div>
+                                                            <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                                {transaction.vehicle_brand} {transaction.vehicle_model}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                            theme === 'dark' 
+                                                                ? 'bg-blue-900 text-blue-200' 
+                                                                : 'bg-blue-100 text-blue-800'
+                                                        }`}>
+                                                            {transaction.category_name || 'N/A'}
+                                                        </span>
+                                                    </td>
+                                                    <td className={`px-6 py-4 text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                        <div className="max-w-xs truncate" title={transaction.description}>
+                                                            {transaction.description || 'Açıklama yok'}
+                                                        </div>
+                                                    </td>
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusInfo(transaction.status).color}`}>
+                                                            {getStatusInfo(transaction.status).text}
+                                                        </span>
+                                                    </td>
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                                                        parseFloat(transaction.amount) >= 0 
+                                                            ? theme === 'dark' ? 'text-green-400' : 'text-green-600'
+                                                            : theme === 'dark' ? 'text-red-400' : 'text-red-600'
+                                                    }`}>
+                                                        ₺{parseFloat(transaction.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </td>
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                        {transaction.personnel_name || 'N/A'}
+                                                    </td>
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                        <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={() => router.push(`/transactions/${transaction.id}/edit`)}
+                                                                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${
+                                                                    theme === 'dark'
+                                                                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                                        : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                                                }`}
+                                                            >
+                                                                Düzenle
+                                                            </button>
+                                                            <button
+                                                                onClick={() => router.push(`/transactions/${transaction.id}`)}
+                                                                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${
+                                                                    theme === 'dark'
+                                                                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                                                                        : 'bg-green-500 hover:bg-green-600 text-white'
+                                                                }`}
+                                                            >
+                                                                Detay
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </motion.tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="lg:hidden space-y-3">
+                            {filteredTransactions.map((transaction, index) => (
+                                <motion.div
+                                    key={transaction.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                                    className={`p-3 rounded-lg shadow-md border ${
+                                        theme === 'dark' 
+                                            ? 'bg-slate-800/50 border-slate-700' 
+                                            : 'bg-white/80 border-gray-200'
+                                    }`}
+                                >
+                                    {/* Header */}
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h3 className={`font-semibold text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                                                {transaction.vehicle_plate || 'N/A'}
+                                            </h3>
+                                            <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                {transaction.vehicle_brand} {transaction.vehicle_model}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className={`text-base font-bold ${
                                                 parseFloat(transaction.amount) >= 0 
                                                     ? theme === 'dark' ? 'text-green-400' : 'text-green-600'
                                                     : theme === 'dark' ? 'text-red-400' : 'text-red-600'
                                             }`}>
                                                 ₺{parseFloat(transaction.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </td>
-                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                            </div>
+                                            <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full mt-1 ${getStatusInfo(transaction.status).color}`}>
+                                                {getStatusInfo(transaction.status).text}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Details */}
+                                    <div className="space-y-1 mb-3">
+                                        <div className="flex justify-between">
+                                            <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Tarih:</span>
+                                            <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Tür:</span>
+                                            <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                {transaction.category_name || 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Personel:</span>
+                                            <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
                                                 {transaction.personnel_name || 'N/A'}
-                                            </td>
-                                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                                                <div className="flex space-x-2">
-                                                    <button
-                                                        onClick={() => router.push(`/transactions/${transaction.id}/edit`)}
-                                                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${
-                                                            theme === 'dark'
-                                                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                                                : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                                        }`}
-                                                    >
-                                                        Düzenle
-                                                    </button>
-                                                    <button
-                                                        onClick={() => router.push(`/transactions/${transaction.id}`)}
-                                                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${
-                                                            theme === 'dark'
-                                                                ? 'bg-green-600 hover:bg-green-700 text-white'
-                                                                : 'bg-green-500 hover:bg-green-600 text-white'
-                                                        }`}
-                                                    >
-                                                        Detay
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </motion.tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                            </span>
+                                        </div>
+                                        {transaction.description && (
+                                            <div>
+                                                <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Açıklama:</span>
+                                                <p className={`text-xs mt-0.5 line-clamp-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
+                                                    {transaction.description}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => router.push(`/transactions/${transaction.id}/edit`)}
+                                            className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors duration-200 ${
+                                                theme === 'dark'
+                                                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                            }`}
+                                        >
+                                            Düzenle
+                                        </button>
+                                        <button
+                                            onClick={() => router.push(`/transactions/${transaction.id}`)}
+                                            className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors duration-200 ${
+                                                theme === 'dark'
+                                                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                                                    : 'bg-green-500 hover:bg-green-600 text-white'
+                                            }`}
+                                        >
+                                            Detay
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))}
                         </div>
 
                         {/* Empty State */}
@@ -667,4 +782,4 @@ const TransactionsPage: React.FC = () => {
     );
 };
 
-export default TransactionsPage; 
+export default TransactionsPage;
