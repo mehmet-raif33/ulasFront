@@ -9,9 +9,14 @@ import { motion } from 'framer-motion';
 // API base URL'ini al
 let API_BASE_URL = '';
 if (process.env.NODE_ENV === 'production') {
-  API_BASE_URL = process.env.SERVER_API1|| 'https://ulasserver-production.up.railway.app';
+  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API1 || process.env.NEXT_PUBLIC_API_URL || 'https://ulasserver-production.up.railway.app';
 } else {
-  API_BASE_URL = process.env.SERVER_API|| 'http://localhost:5000';
+  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+}
+
+// Fallback kontrolü
+if (!API_BASE_URL || !API_BASE_URL.startsWith('http')) {
+  API_BASE_URL = 'http://localhost:5000';
 }
 
 interface MonthlyRevenue {

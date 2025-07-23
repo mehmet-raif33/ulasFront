@@ -5,12 +5,12 @@ let API_BASE_URL = '';
 // Environment variables'dan API URL'ini al
 if (process.env.NODE_ENV === 'production') {
   // Production ortamında Railway server'ını kullan
-  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API1 || 'https://ulasserver-production.up.railway.app';
+  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API1 || process.env.NEXT_PUBLIC_API_URL || 'https://ulasserver-production.up.railway.app';
 } else {
   // Development ortamında local server'ı kullan
-  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API || 'http://localhost:5000';
+  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 } 
-  //dsfdsf
+
 // Fallback için güvenlik kontrolü - protokolü garanti et
 if (!API_BASE_URL || !API_BASE_URL.startsWith('http')) {
   console.warn('API_BASE_URL is not set or invalid, using default localhost');
@@ -21,6 +21,7 @@ console.log('=== API DEBUG INFO ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('NEXT_PUBLIC_SERVER_API:', process.env.NEXT_PUBLIC_SERVER_API);
 console.log('NEXT_PUBLIC_SERVER_API1:', process.env.NEXT_PUBLIC_SERVER_API1);
+console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
 console.log('Final API_BASE_URL:', API_BASE_URL);
 console.log('========================');
 

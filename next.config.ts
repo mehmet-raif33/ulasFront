@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_SERVER_API: process.env.SERVER_API,
     NEXT_PUBLIC_SERVER_API1: process.env.SERVER_API1,
+    NEXT_PUBLIC_FRONTEND_URL: process.env.FRONTEND_URL,
   },
   
   // Vercel deployment optimizasyonları
