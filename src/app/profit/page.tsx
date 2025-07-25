@@ -724,18 +724,18 @@ const ProfitPage: React.FC = () => {
                 <label className={`block text-sm font-semibold mb-2 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                   📅 Yıl Seçimi
                 </label>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-3 focus:ring-emerald-500/50 transition-all ${
-                    theme === 'dark' 
-                      ? 'bg-slate-700 border-slate-600 text-gray-200' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                >
-                  {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
+                                        <select
+                          value={selectedYear}
+                          onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                          className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-3 focus:ring-emerald-500/50 transition-all ${
+                            theme === 'dark' 
+                              ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                              : 'bg-white border-gray-300 text-gray-900'
+                          }`}
+                        >
+                          {Array.from({ length: new Date().getFullYear() - 1999 + 3 }, (_, i) => new Date().getFullYear() + 3 - i).map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
                 </select>
               </div>
               <div>
@@ -773,7 +773,9 @@ const ProfitPage: React.FC = () => {
                   theme === 'dark' ? 'bg-slate-700 border-slate-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'
                 }`}
               >
-                {[2023, 2024, 2025].map(y => <option key={y} value={y}>{y}</option>)}
+                {Array.from({ length: new Date().getFullYear() - 1999 + 3 }, (_, i) => new Date().getFullYear() + 3 - i).map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
               </select>
             </div>
           )}
@@ -791,7 +793,9 @@ const ProfitPage: React.FC = () => {
                     theme === 'dark' ? 'bg-slate-700 border-slate-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'
                   }`}
                 >
-                  {[2023, 2024, 2025].map(y => <option key={y} value={y}>{y}</option>)}
+                  {Array.from({ length: new Date().getFullYear() - 1999 + 3 }, (_, i) => new Date().getFullYear() + 3 - i).map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
                 </select>
               </div>
               <div>

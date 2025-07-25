@@ -770,7 +770,7 @@ const RevenuePage: React.FC = () => {
                               : 'bg-white border-gray-300 text-gray-900'
                           }`}
                         >
-                          {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                          {Array.from({ length: new Date().getFullYear() - 1999 + 3 }, (_, i) => new Date().getFullYear() + 3 - i).map(year => (
                             <option key={year} value={year}>{year}</option>
                           ))}
                         </select>
@@ -1039,7 +1039,7 @@ const RevenuePage: React.FC = () => {
                             : 'bg-white border-gray-300 text-gray-900'
                         }`}
                       >
-                        {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                        {Array.from({ length: new Date().getFullYear() - 1999 + 3 }, (_, i) => new Date().getFullYear() + 3 - i).map(year => (
                           <option key={year} value={year}>{year}</option>
                         ))}
                       </select>
@@ -1345,7 +1345,7 @@ const RevenuePage: React.FC = () => {
                                   : 'bg-white border-gray-300 text-gray-900'
                               }`}
                             >
-                            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
+                            {Array.from({ length: new Date().getFullYear() - 1999 + 3 }, (_, i) => new Date().getFullYear() + 3 - i).map(year => (
                               <option key={year} value={year}>
                                 {year}
                               </option>
