@@ -27,44 +27,71 @@ const AuthInitializer = () => {
         dispatch(setLoading(true));
         
         try {
+          console.log('🚀 Starting AuthInitializer...');
+          
           // Token manager'ı initialize et
           await tokenManager.initialize();
+          console.log('✅ TokenManager initialized');
           
           // Token manager'dan user bilgisini al
           const userData = tokenManager.getUserData();
+          const isAuthenticated = tokenManager.isAuthenticated();
+          const tokenInfo = tokenManager.getTokenInfo();
           
-          if (userData && tokenManager.isAuthenticated()) {
+          console.log('🔍 Auth check:', { 
+            userData: userData ? { id: userData.id, email: userData.email, role: userData.role } : null,
+            isAuthenticated,
+            tokenInfo 
+          });
+          
+          if (userData && isAuthenticated) {
             log.info('User authenticated via token manager', { userId: userData.id, email: userData.email });
+            console.log('✅ User is authenticated, restoring auth state');
             
-            // Kullanıcı bilgilerini Redux'a kaydet
+            // Kullanıcı bilgilerini Redux'a kaydet (role mapping ile)
             dispatch(restoreAuth({
               id: userData.id,
               email: userData.email,
               name: userData.name,
-              role: userData.role,
+              role: userData.role === 'admin' ? 'admin' : 'user' as 'admin' | 'user',
             }));
             
             // Landing page veya auth sayfasındaysa dashboard'a yönlendir
             const currentPath = window.location.pathname;
             if (currentPath === '/landing' || currentPath === '/auth') {
               log.debug('Redirecting from auth page to dashboard', { from: currentPath });
+              console.log('🔄 Redirecting to dashboard from:', currentPath);
               router.push('/');
             }
           } else {
             log.info('No valid authentication found');
+            console.log('❌ No valid authentication - clearing auth state');
             
             // Token yoksa korumalı sayfalardaysa landing page'e yönlendir
             const currentPath = window.location.pathname;
             if (currentPath !== '/landing' && currentPath !== '/auth') {
               log.debug('Redirecting to landing page', { from: currentPath });
+              console.log('🔄 Redirecting to landing from:', currentPath);
               router.push('/landing');
             }
           }
         } catch (error) {
           log.error('Auth initialization error', error);
+          console.error('❌ Auth initialization failed:', error);
           
-          // Hata durumunda logout yap
-          dispatch(logout());
+          // Hata durumunda logout yap - Ama sadece gerçekten kritik hatalarda
+          if (error && typeof error === 'object' && 'message' in error) {
+            const errorMessage = (error as Error).message;
+            if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('timeout')) {
+              console.log('🌐 Network error detected, not logging out user');
+              // Network hataları için logout yapma, kullanıcı offline olabilir
+            } else {
+              console.log('💔 Critical auth error, logging out user');
+              dispatch(logout());
+            }
+          } else {
+            dispatch(logout());
+          }
           
           const currentPath = window.location.pathname;
           if (currentPath !== '/landing' && currentPath !== '/auth') {
@@ -103,8 +130,12 @@ const AuthInitializer = () => {
       if (userData && typeof userData === 'object' && 'id' in userData && 'email' in userData && 'name' in userData && 'role' in userData) {
         const typedUserData = userData as { id: string; email: string; name: string; role: "user" | "admin" };
         
-        // Redux state'i güncelle
-        dispatch(restoreAuth(typedUserData));
+        // Redux state'i güncelle (role mapping ile)
+        const mappedUserData = {
+          ...typedUserData,
+          role: typedUserData.role === 'admin' ? 'admin' : 'user' as 'admin' | 'user'
+        };
+        dispatch(restoreAuth(mappedUserData));
         
         // Auth sayfasındaysa dashboard'a yönlendir
         if (window.location.pathname === '/auth' || window.location.pathname === '/landing') {
@@ -119,6 +150,9 @@ const AuthInitializer = () => {
       
       // Redux state'i temizle
       dispatch(logout());
+      
+      // Token manager'da da temizle (eğer başka tab logout yapmışsa)
+      tokenManager.clearTokens().catch(error => log.error('Token clear error', error));
       
       // Landing sayfasına yönlendir
       if (window.location.pathname !== '/landing' && window.location.pathname !== '/auth') {

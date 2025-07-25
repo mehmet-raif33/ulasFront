@@ -40,9 +40,11 @@ export const authSlice = createSlice({
       state.user = null
       state.loading = false
       state.error = null
-      // LocalStorage'dan user bilgisini temizle
-      localStorage.removeItem('user')
-      localStorage.removeItem('token')
+      // LocalStorage'dan user bilgisini temizle - TokenManager ile uyumlu key'ler kullan
+      localStorage.removeItem('user_data')
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('token_expires_at')
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload

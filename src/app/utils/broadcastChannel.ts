@@ -236,10 +236,11 @@ export const setupTabActivityMonitor = () => {
   let isActive = true;
   
   // Listen for pings and respond with pong
-  tabComm.listen(MESSAGE_TYPES.PING, (data: any) => {
+  tabComm.listen(MESSAGE_TYPES.PING, (data?: unknown) => {
+    const pingData = data as { tabId?: string; [key: string]: unknown } | undefined;
     if (isActive) {
       tabComm.send(MESSAGE_TYPES.PONG, { 
-        respondingTo: data?.tabId, 
+        respondingTo: pingData?.tabId, 
         timestamp: Date.now(),
         url: window.location.href
       });

@@ -19,7 +19,7 @@ interface UserData {
 // Request queue interface
 interface QueuedRequest {
   resolve: (value: any) => void;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
   request: () => Promise<any>;
 }
 
@@ -126,19 +126,38 @@ class TokenManager {
     if (typeof window === 'undefined') return;
 
     try {
-      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-      const expiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
-      const userString = localStorage.getItem(STORAGE_KEYS.USER);
+             // Try to load from new token manager keys first
+       let token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+       const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+       let expiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+       let userString = localStorage.getItem(STORAGE_KEYS.USER);
 
-      if (!token || !expiresAt || !userString) {
+      // Fallback to legacy keys for backward compatibility
+      if (!token || !userString) {
+        token = localStorage.getItem('token');
+        userString = localStorage.getItem('user');
+        console.log('📱 Loading token from legacy storage keys');
+      }
+
+      if (!token || !userString) {
         return;
       }
 
-      const userData = JSON.parse(userString);
-      const expiresAtNum = parseInt(expiresAt, 10);
+      // If we don't have expiresAt from new system, try to parse token
+      if (!expiresAt && token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          expiresAt = (payload.exp * 1000).toString(); // Convert to milliseconds
+                 } catch {
+           console.warn('⚠️ Could not parse token expiry, will check during validation');
+         }
+      }
 
-      // Check if token is expired
-      if (Date.now() >= expiresAtNum) {
+      const userData = JSON.parse(userString);
+      const expiresAtNum = expiresAt ? parseInt(expiresAt, 10) : Date.now() + (24 * 60 * 60 * 1000); // Default to 24h if not available
+
+      // Check if token is expired (only if we have valid expiry time)
+      if (expiresAt && Date.now() >= expiresAtNum) {
         console.log('🚨 Stored token is expired, clearing...');
         await this.clearTokens();
         return;
@@ -146,6 +165,7 @@ class TokenManager {
 
       this.tokenData = {
         token,
+        refreshToken: refreshToken || undefined,
         expiresAt: expiresAtNum,
         userId: userData.id,
         role: userData.role
@@ -172,15 +192,23 @@ class TokenManager {
       localStorage.setItem(STORAGE_KEYS.TOKEN, tokenData.token);
       localStorage.setItem(STORAGE_KEYS.EXPIRES_AT, tokenData.expiresAt.toString());
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+      
+      // Backward compatibility: Eski API sistem için 'token' key'i ile de kaydet
+      localStorage.setItem('token', tokenData.token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      if (tokenData.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokenData.refreshToken);
+      }
 
-      console.log('💾 Token saved to storage');
+      console.log('💾 Token saved to storage (both new and legacy keys)');
     } catch (error) {
       console.error('❌ Error saving token to storage:', error);
     }
   }
 
   // Set tokens after login
-  async setTokens(token: string, userData: UserData): Promise<void> {
+  async setTokens(token: string, userData: UserData, refreshToken?: string): Promise<void> {
     try {
       // Parse JWT to get expiry
       const payload = this.parseJWT(token);
@@ -188,6 +216,7 @@ class TokenManager {
 
       this.tokenData = {
         token,
+        refreshToken,
         expiresAt,
         userId: userData.id,
         role: userData.role
@@ -274,41 +303,66 @@ class TokenManager {
 
   // Perform the actual token refresh
   private async performTokenRefresh(): Promise<string> {
-    if (!this.tokenData) {
-      throw new Error('No token data available for refresh');
+    if (!this.tokenData || !this.tokenData.refreshToken) {
+      throw new Error('No refresh token available for refresh');
     }
 
     try {
-      // Try to validate current token with backend
-      const response = await fetch(`${CONFIG.API_BASE_URL}/auth/profile`, {
+      // Call refresh endpoint with refresh token
+      const response = await fetch(`${CONFIG.API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.tokenData.token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          refreshToken: this.tokenData.refreshToken
+        })
       });
 
       if (response.ok) {
         const data = await response.json();
         
-        // If token is still valid, extend its expiry time
-        const newExpiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+        // Parse new JWT to get expiry
+        const payload = this.parseJWT(data.token);
+        const newExpiresAt = payload.exp * 1000;
         
-        this.tokenData.expiresAt = newExpiresAt;
+        // Update token data
+        this.tokenData = {
+          token: data.token,
+          refreshToken: data.refreshToken,
+          expiresAt: newExpiresAt,
+          userId: data.user.id,
+          role: data.user.role
+        };
         
-        if (this.userData) {
-          this.saveTokenToStorage(this.tokenData, this.userData);
-        }
+                 // Update user data (with role mapping)
+         this.userData = {
+           id: data.user.id,
+           email: data.user.email,
+           name: data.user.full_name || data.user.username,
+           role: data.user.role === 'admin' ? 'admin' : 'user' as 'admin' | 'user'
+         };
         
+        // Save to storage (with backward compatibility)
+        this.saveTokenToStorage(this.tokenData, this.userData);
+        
+        // Schedule next refresh
         this.scheduleTokenRefresh();
         
         // Broadcast token refresh to other tabs
         broadcastTokenRefreshed(this.tokenData.expiresAt);
         
-        console.log('✅ Token validated and extended');
+        console.log('✅ Token refreshed successfully:', {
+          userId: this.userData.id,
+          expiresIn: Math.round((newExpiresAt - Date.now()) / 1000 / 60) + ' minutes'
+        });
+        
         return this.tokenData.token;
       } else {
-        // Token is invalid, trigger logout
-        throw new Error('Token validation failed');
+        // Refresh token is invalid or expired, trigger logout
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Refresh token invalid:', errorData);
+        throw new Error('Refresh token invalid or expired');
       }
     } catch (error) {
       console.error('❌ Token refresh failed:', error);
@@ -363,7 +417,7 @@ class TokenManager {
   }
 
   // Reject all queued requests
-  private rejectRequestQueue(error: any): void {
+  private rejectRequestQueue(error: unknown): void {
     console.log(`❌ Rejecting ${this.requestQueue.length} queued requests`);
     
     const queue = [...this.requestQueue];
@@ -391,9 +445,10 @@ class TokenManager {
 
     try {
       return await requestFn(token);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If 401 error, try to refresh token and retry
-      if (error.statusCode === 401 || (error.message && error.message.includes('401'))) {
+      const errorObj = error as { statusCode?: number; message?: string };
+      if (errorObj.statusCode === 401 || (errorObj.message && errorObj.message.includes('401'))) {
         console.log('🔄 Received 401, attempting token refresh...');
         
         try {
@@ -430,16 +485,30 @@ class TokenManager {
   private handleExternalLogin(userData: UserData): void {
     if (typeof window === 'undefined') return;
     
-    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-    const expiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+         // Try new keys first, then legacy keys
+     const token = localStorage.getItem(STORAGE_KEYS.TOKEN) || localStorage.getItem('token');
+     const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+     let expiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
+    
+    // If no expiresAt from new system, try to parse from token
+    if (!expiresAt && token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        expiresAt = (payload.exp * 1000).toString();
+             } catch {
+         console.warn('⚠️ Could not parse token expiry in external login');
+         expiresAt = (Date.now() + (24 * 60 * 60 * 1000)).toString(); // Default 24h
+       }
+    }
     
     if (token && expiresAt) {
-      this.tokenData = {
-        token,
-        expiresAt: parseInt(expiresAt, 10),
-        userId: userData.id,
-        role: userData.role
-      };
+             this.tokenData = {
+         token,
+         refreshToken: refreshToken || undefined,
+         expiresAt: parseInt(expiresAt, 10),
+         userId: userData.id,
+         role: userData.role
+       };
       
       this.userData = userData;
       this.scheduleTokenRefresh();
@@ -470,15 +539,39 @@ class TokenManager {
     }
 
     if (typeof window !== 'undefined') {
+      // Clear new token manager keys
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
       localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
+      
+      // Clear legacy keys for backward compatibility
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
   }
 
   // Logout
   async logout(): Promise<void> {
+    // Call backend logout to invalidate refresh token
+    if (this.tokenData?.refreshToken) {
+      try {
+        await fetch(`${CONFIG.API_BASE_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(this.tokenData.token && { 'Authorization': `Bearer ${this.tokenData.token}` })
+          },
+          body: JSON.stringify({
+            refreshToken: this.tokenData.refreshToken
+          })
+        });
+      } catch (error) {
+        console.error('❌ Backend logout failed:', error);
+        // Continue with local logout even if backend call fails
+      }
+    }
+
     await this.clearTokens();
     broadcastLogout();
     
@@ -498,7 +591,7 @@ class TokenManager {
   }
 
   // Parse JWT token
-  private parseJWT(token: string): any {
+  private parseJWT(token: string): { exp: number; id: string; role: string; [key: string]: unknown } {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -539,7 +632,7 @@ export const tokenManager = new TokenManager();
 // Export convenience functions
 export const useTokenManager = () => ({
   initialize: () => tokenManager.initialize(),
-  setTokens: (token: string, userData: UserData) => tokenManager.setTokens(token, userData),
+  setTokens: (token: string, userData: UserData, refreshToken?: string) => tokenManager.setTokens(token, userData, refreshToken),
   getValidToken: () => tokenManager.getValidToken(),
   makeAuthenticatedRequest: <T>(requestFn: (token: string) => Promise<T>) => 
     tokenManager.makeAuthenticatedRequest(requestFn),

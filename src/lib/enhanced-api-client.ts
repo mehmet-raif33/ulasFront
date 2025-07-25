@@ -64,9 +64,9 @@ type ErrorInterceptor = (error: ApiError, config: InternalRequestConfig) => Prom
 export class ApiClientError extends Error implements ApiError {
   public statusCode: number;
   public error: string;
-  public originalError?: any;
+  public originalError?: unknown;
 
-  constructor(message: string, statusCode: number = 500, error: string = 'UNKNOWN_ERROR', originalError?: any) {
+  constructor(message: string, statusCode: number = 500, error: string = 'UNKNOWN_ERROR', originalError?: unknown) {
     super(message);
     this.name = 'ApiClientError';
     this.statusCode = statusCode;
@@ -281,7 +281,7 @@ class EnhancedApiClient {
     }
     
     // Retry network errors
-    if (error instanceof TypeError && (error as any).code === 'NETWORK_ERROR') {
+    if (error instanceof TypeError && (error as { code?: string }).code === 'NETWORK_ERROR') {
       return true;
     }
     
@@ -414,7 +414,7 @@ class EnhancedApiClient {
   }
 
   // Health check method
-  async healthCheck(): Promise<ApiResponse<any>> {
+  async healthCheck(): Promise<ApiResponse<{ status: string; [key: string]: unknown }>> {
     return this.publicGet('/health');
   }
 

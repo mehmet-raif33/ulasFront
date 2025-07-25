@@ -6,7 +6,7 @@ const IS_TEST = process.env.NODE_ENV === 'test';
 const LOGGING_ENABLED = IS_DEVELOPMENT || IS_TEST;
 
 export interface LogContext {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 class Logger {

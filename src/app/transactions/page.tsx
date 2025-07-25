@@ -175,7 +175,7 @@ const TransactionsPage: React.FC = () => {
     // İlk yükleme
     useEffect(() => {
         loadData(1, filters);
-    }, [isLoggedIn]); // Sadece login durumu değiştiğinde
+    }, [isLoggedIn, loadData, filters]); // Dependency'leri ekledim
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const newFilters = {
@@ -194,7 +194,7 @@ const TransactionsPage: React.FC = () => {
         }, 500);
         
         return () => clearTimeout(timeoutId);
-    }, [filters.category_id, filters.date_from, filters.date_to, loadData]); // Sadece backend filtrelerini izle
+    }, [filters.category_id, filters.date_from, filters.date_to, loadData, isLoggedIn, filters]); // Tüm dependency'leri ekledim
 
     const clearFilters = () => {
         const clearedFilters = {

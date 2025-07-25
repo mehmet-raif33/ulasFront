@@ -403,7 +403,7 @@ class SecureStorage {
             localStorage.removeItem(storageKey);
             cleanedCount++;
           }
-        } catch (error) {
+        } catch {
           // Remove corrupted items
           localStorage.removeItem(storageKey);
           cleanedCount++;

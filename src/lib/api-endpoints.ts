@@ -14,6 +14,7 @@ export const authApi = {
         full_name: string;
       };
       token: string;
+      refreshToken?: string;
     }>('/auth/login', credentials),
 
   // Get profile (auth required)
@@ -152,7 +153,7 @@ export const transactionApi = {
     end_date?: string;
   }) => {
     const queryString = params ? `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}` : '';
     
@@ -174,9 +175,9 @@ export const vehicleApi = {
     page?: number;
     limit?: number;
     search?: string;
-  }) => {
+      }) => {
     const queryString = params ? `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}` : '';
     
@@ -198,12 +199,12 @@ export const vehicleApi = {
     search?: string;
   }) => {
     const queryString = params ? `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}` : '';
     
     return enhancedApiClient.get<{
-      customers: any[];
+      customers: unknown[];
       pagination?: {
         page: number;
         limit: number;
@@ -277,12 +278,12 @@ export const personnelApi = {
     status?: string;
   }) => {
     const queryString = params ? `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}` : '';
     
     return enhancedApiClient.get<{
-      personnel: any[];
+      personnel: unknown[];
       pagination?: {
         page: number;
         limit: number;
@@ -370,7 +371,7 @@ export const activityApi = {
   // Get monthly revenue
   getMonthlyRevenue: (params?: { year?: number; month?: number }) => {
     const queryString = params ? `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}` : '';
     
@@ -380,7 +381,7 @@ export const activityApi = {
   // Get yearly revenue
   getYearlyRevenue: (params?: { year?: number }) => {
     const queryString = params ? `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}` : '';
     
@@ -394,7 +395,7 @@ export const activityApi = {
     endDate?: string;
   }) => {
     const queryString = params ? `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}` : '';
     
@@ -404,7 +405,7 @@ export const activityApi = {
   // Get category yearly revenue
   getCategoryYearlyRevenue: (params: { categoryId?: string; year?: number }) => {
     const queryString = `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}`;
     
@@ -414,7 +415,7 @@ export const activityApi = {
   // Get category monthly revenue
   getCategoryMonthlyRevenue: (params: { categoryId?: string; year?: number; month?: number }) => {
     const queryString = `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}`;
     
@@ -424,7 +425,7 @@ export const activityApi = {
   // Get category weekly revenue
   getCategoryWeeklyRevenue: (params: { categoryId?: string; year?: number; week?: number }) => {
     const queryString = `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}`;
     
@@ -434,7 +435,7 @@ export const activityApi = {
   // Get category daily revenue
   getCategoryDailyRevenue: (params: { categoryId?: string; date?: string }) => {
     const queryString = `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}`;
     
@@ -448,7 +449,7 @@ export const activityApi = {
     endDate?: string;
   }) => {
     const queryString = `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}`;
     

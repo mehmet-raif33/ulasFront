@@ -2,42 +2,12 @@ import { configureStore } from '@reduxjs/toolkit'
 import authReducer from './sliceses/authSlices'
 import themeReducer from './sliceses/themeSlice'
 
-// LocalStorage'dan auth state'i geri yükle
-const loadAuthState = () => {
-  try {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      const user = JSON.parse(userData);
-      return {
-        isLoggedIn: true,
-        user: user,
-        loading: false,
-        error: null,
-        isInitialized: true
-      };
-    }
-  } catch (error) {
-    console.error('Error loading auth state from localStorage:', error);
-  }
-  
-  return {
-    isLoggedIn: false,
-    user: null,
-    loading: false,
-    error: null,
-    isInitialized: true
-  };
-};
-
+// Auth state'i AuthInitializer ile yükleyeceğiz, burada preload etmeyelim
+// Bu, TokenManager ile conflict yaratıyordu
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     theme: themeReducer,
-  },
-  preloadedState: {
-    auth: loadAuthState()
   }
 })
 

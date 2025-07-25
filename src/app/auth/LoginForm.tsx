@@ -47,11 +47,11 @@ const LoginForm: React.FC = () => {
       // Enhanced API client ile login yap
       const response = await authApi.login({ username, password });
       
-      if (!response.data) {
+      if (!response || !response.data || !response.data.user || !response.data.token) {
         throw new Error('Login response data is missing');
       }
       
-      const { user, token } = response.data;
+      const { user, token, refreshToken } = response.data;
       
       // Kullanıcı bilgisini normalize et
       const userData = {
@@ -64,7 +64,7 @@ const LoginForm: React.FC = () => {
       console.log('✅ Login successful, setting up token manager...');
       
       // Token manager ile token'ı ve user bilgisini kaydet
-      await tokenManager.setTokens(token, userData);
+      await tokenManager.setTokens(token, userData, refreshToken);
       
       // Redux state'i güncelle
       dispatch(login(userData));
