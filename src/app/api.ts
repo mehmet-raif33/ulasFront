@@ -11,55 +11,137 @@ if (process.env.NODE_ENV === 'production') {
   API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 }
 
-console.log('Environment check:', {
+console.log('🔧 API Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
   NEXT_PUBLIC_SERVER_API: process.env.NEXT_PUBLIC_SERVER_API,
+  NEXT_PUBLIC_SERVER_API1: process.env.NEXT_PUBLIC_SERVER_API1,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   Final_API_BASE_URL: API_BASE_URL
-}); 
+});
 
-// Fallback için güvenlik kontrolü - protokolü garanti et
-if (!API_BASE_URL || !API_BASE_URL.startsWith('http')) {
-  console.warn('API_BASE_URL is not set or invalid, using default localhost');
-  API_BASE_URL = 'http://localhost:5000';
+// Add debugging for Railway deployment
+if (process.env.NODE_ENV === 'production') {
+  console.log('🚀 Railway Production Mode:', {
+    baseUrl: API_BASE_URL,
+    env: process.env.NODE_ENV
+  });
 }
 
-console.log('=== API DEBUG INFO ===');
-console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('NEXT_PUBLIC_SERVER_API:', process.env.NEXT_PUBLIC_SERVER_API);
 console.log('NEXT_PUBLIC_SERVER_API1:', process.env.NEXT_PUBLIC_SERVER_API1);
-console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
-console.log('Final API_BASE_URL:', API_BASE_URL);
-console.log('========================');
+
+// Token validation helper
+function validateTokenStructure(token: string): boolean {
+  if (!token) return false;
+  
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.error('🚨 Invalid JWT structure - parts:', parts.length);
+      return false;
+    }
+    
+    const payload = JSON.parse(atob(parts[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    
+    if (payload.exp && payload.exp < currentTime) {
+      console.error('🚨 Token expired:', {
+        exp: payload.exp,
+        current: currentTime,
+        expiredBy: currentTime - payload.exp
+      });
+      return false;
+    }
+    
+    console.log('✅ Token valid:', {
+      userId: payload.id,
+      role: payload.role,
+      exp: payload.exp,
+      remainingTime: payload.exp - currentTime
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('🚨 Token validation error:', error);
+    return false;
+  }
+}
 
 export async function loginApi({ username, password }: { username: string; password: string }) {
+  console.log('🔐 Login attempt:', { username, baseUrl: API_BASE_URL });
+  
   const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   });
+  
+  console.log('📡 Login response:', {
+    status: res.status,
+    statusText: res.statusText,
+    headers: Object.fromEntries(res.headers.entries())
+  });
+  
   if (!res.ok) {
     const error = await res.json();
+    console.error('❌ Login failed:', error);
     throw new Error(error.message || 'Giriş başarısız');
   }
-  return res.json();  
+  
+  const data = await res.json();
+  console.log('✅ Login successful:', {
+    hasToken: !!data.token,
+    tokenLength: data.token?.length,
+    userId: data.user?.id,
+    role: data.user?.role
+  });
+  
+  return data;  
 }
 
-
-
 export async function getProfileApi(token: string) {
+  console.log('👤 Getting profile with token validation...');
+  
+  if (!validateTokenStructure(token)) {
+    console.error('🚨 Invalid token structure');
+    throw new Error('Token geçersiz veya süresi dolmuş');
+  }
+  
   const res = await fetch(`${API_BASE_URL}/auth/profile`, {
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
   });
+  
+  console.log('📡 Profile response:', {
+    status: res.status,
+    statusText: res.statusText,
+    url: `${API_BASE_URL}/auth/profile`
+  });
+  
   if (!res.ok) {
     const error = await res.json();
+    console.error('❌ Profile fetch failed:', {
+      status: res.status,
+      error: error,
+      token: token.substring(0, 20) + '...'
+    });
+    
     // Token expired durumunda diğer sekmelere bildir
     if (res.status === 401) {
       broadcastTokenExpired();
     }
     throw new Error(error.message || 'Profil alınamadı');
   }
-  return res.json();
+  
+  const data = await res.json();
+  console.log('✅ Profile fetched successfully:', {
+    userId: data.user?.id,
+    role: data.user?.role
+  });
+  
+  return data;
 }
 
 export async function changePasswordApi(token: string, { oldPassword, newPassword }: { oldPassword: string; newPassword: string }) {

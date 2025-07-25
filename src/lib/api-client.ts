@@ -9,6 +9,43 @@ const API_CONFIG = {
   retries: 3
 };
 
+// Debug logging
+console.log('🔧 API Client Configuration:', {
+  NODE_ENV: process.env.NODE_ENV,
+  BASE_URL: API_CONFIG.baseURL,
+  NEXT_PUBLIC_SERVER_API1: process.env.NEXT_PUBLIC_SERVER_API1,
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  NEXT_PUBLIC_SERVER_API: process.env.NEXT_PUBLIC_SERVER_API
+});
+
+// Token validation helper
+function validateToken(token: string): boolean {
+  if (!token) return false;
+  
+  try {
+    // Basic JWT structure check
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    // Decode payload to check expiry
+    const payload = JSON.parse(atob(parts[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    
+    if (payload.exp && payload.exp < currentTime) {
+      console.warn('🚨 Token expired:', {
+        exp: payload.exp,
+        current: currentTime
+      });
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('🚨 Token validation error:', error);
+    return false;
+  }
+}
+
 // Types
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -83,6 +120,7 @@ class ApiClient {
       return await requestFn();
     } catch (error) {
       if (retries > 0 && this.isRetryableError(error)) {
+        console.log(`🔄 Retrying request... (${this.defaultRetries - retries + 1}/${this.defaultRetries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return this.retryRequest(requestFn, retries - 1, delay * 2);
       }
@@ -124,14 +162,34 @@ class ApiClient {
       requestOptions.body = JSON.stringify(body);
     }
 
+    console.log(`🌐 API Request: ${method} ${url}`, {
+      headers: requestOptions.headers,
+      body: method !== 'GET' ? body : undefined
+    });
+
     const makeRequest = async (): Promise<ApiResponse<T>> => {
       try {
         const response = await this.createRequestWithTimeout(url, requestOptions, timeout);
         
+        console.log(`📡 API Response: ${method} ${url}`, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+
         // Handle token expiration
         if (response.status === 401) {
+          console.error('🚨 Authentication expired (401)');
           broadcastTokenExpired();
           throw new ApiClientError('Authentication expired', 401, 'TOKEN_EXPIRED');
+        }
+
+        // Handle forbidden error
+        if (response.status === 403) {
+          console.error('🚨 Access forbidden (403) - Token might be invalid');
+          const errorText = await response.text();
+          console.error('403 Error details:', errorText);
+          throw new ApiClientError('Access forbidden - Invalid token', 403, 'ACCESS_FORBIDDEN');
         }
 
         const data = await response.json();
@@ -151,9 +209,11 @@ class ApiClient {
         }
         
         if (error instanceof TypeError && error.message.includes('fetch')) {
+          console.error('🌐 Network error:', error);
           throw new ApiClientError('Network error', 0, 'NETWORK_ERROR');
         }
         
+        console.error('❌ Unknown API error:', error);
         throw new ApiClientError('Unknown error occurred', 500, 'UNKNOWN_ERROR');
       }
     };
@@ -188,6 +248,18 @@ class ApiClient {
     token: string,
     config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {
+    // Validate token before making request
+    if (!validateToken(token)) {
+      console.error('🚨 Invalid token provided to authenticatedRequest');
+      throw new ApiClientError('Invalid or expired token', 401, 'INVALID_TOKEN');
+    }
+
+    console.log('🔐 Making authenticated request with token:', {
+      endpoint,
+      tokenLength: token.length,
+      tokenStart: token.substring(0, 20) + '...'
+    });
+
     return this.request<T>(endpoint, {
       ...config,
       headers: {
