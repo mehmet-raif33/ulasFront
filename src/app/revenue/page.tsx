@@ -579,32 +579,32 @@ const RevenuePage: React.FC = () => {
         loadDailyRevenue();
       }
     }
-  }, [isLoggedIn, user, activeTab, selectedYear, selectedMonth, selectedYearForYearly, selectedStartDate, selectedEndDate, selectedWeek]);
+  }, [isLoggedIn, user, activeTab, selectedYear, selectedMonth, selectedYearForYearly, selectedStartDate, selectedEndDate, selectedWeek]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Kategori filtreleri için ayrı effect'ler
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin' && activeTab === 'monthly') {
       loadMonthlyRevenue();
     }
-  }, [selectedCategoriesForMonthly]);
+  }, [selectedCategoriesForMonthly]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin' && activeTab === 'yearly') {
       loadYearlyRevenue();
     }
-  }, [selectedCategoriesForYearly]);
+  }, [selectedCategoriesForYearly]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin' && activeTab === 'weekly') {
       loadWeeklyRevenue();
     }
-  }, [selectedCategoriesForWeekly]);
+  }, [selectedCategoriesForWeekly]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin' && activeTab === 'daily') {
       loadDailyRevenue();
     }
-  }, [selectedCategoriesForDaily, selectedDailyDate]);
+  }, [selectedCategoriesForDaily, selectedDailyDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // İlk yüklemede kategorileri yükle
   useEffect(() => {
@@ -622,21 +622,21 @@ const RevenuePage: React.FC = () => {
         loadWeeklyRevenue();
       }
     }
-  }, [activeTab, selectedWeek, selectedStartDate, selectedEndDate, selectedYearForWeekly]);
+  }, [activeTab, selectedWeek, selectedStartDate, selectedEndDate, selectedYearForWeekly]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Yıl değişikliğinde hafta seçeneklerini yeniden oluştur
   useEffect(() => {
     if (activeTab === 'weekly') {
       generateWeeklyOptions(selectedYearForWeekly);
     }
-  }, [selectedYearForWeekly, activeTab]);
+  }, [selectedYearForWeekly, activeTab, generateWeeklyOptions]);
 
   // Günlük ciro sekmesi açıldığında otomatik veri yükle
   useEffect(() => {
     if (activeTab === 'daily' && selectedDailyDate) {
       loadDailyRevenue();
     }
-  }, [activeTab, selectedDailyDate]);
+  }, [activeTab, selectedDailyDate, loadDailyRevenue]);
 
 
 

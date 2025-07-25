@@ -97,7 +97,7 @@ const TransactionsPage: React.FC = () => {
     // İstatistikleri yükle
     const loadStats = async (token: string) => {
         try {
-            const statsParams: any = {};
+            const statsParams: Record<string, string> = {};
             
             // Filtreleri istatistik parametrelerine ekle
             if (filters.category_id) statsParams.category_id = filters.category_id;
@@ -127,7 +127,7 @@ const TransactionsPage: React.FC = () => {
                     setError(null);
                     
                     // API çağrısına filtreleri ekle
-                    const apiParams: any = { 
+                    const apiParams: Record<string, string | number> = { 
                         page: pagination.page, 
                         limit: pagination.limit 
                     };
@@ -174,7 +174,7 @@ const TransactionsPage: React.FC = () => {
             };
             loadData();
         }
-    }, [isLoggedIn]);
+    }, [isLoggedIn, filters.category_id, filters.date_from, filters.date_to, loadStats, pagination.limit, pagination.page]);
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFilters({
@@ -201,7 +201,7 @@ const TransactionsPage: React.FC = () => {
                     setPagination(prev => ({ ...prev, page: 1 }));
                     
                     // API çağrısına filtreleri ekle
-                    const apiParams: any = { 
+                    const apiParams: Record<string, string | number> = { 
                         page: 1, 
                         limit: pagination.limit 
                     };
@@ -245,7 +245,7 @@ const TransactionsPage: React.FC = () => {
             const timeoutId = setTimeout(loadFilteredData, 500);
             return () => clearTimeout(timeoutId);
         }
-    }, [filters, isLoggedIn, pagination.limit]);
+    }, [filters, isLoggedIn, pagination.limit, loadStats]);
 
     const clearFilters = () => {
         setFilters({
@@ -274,7 +274,7 @@ const TransactionsPage: React.FC = () => {
             setError(null);
             
             // API çağrısına filtreleri ekle
-            const apiParams: any = { 
+            const apiParams: Record<string, string | number> = { 
                 page: newPage, 
                 limit: pagination.limit 
             };

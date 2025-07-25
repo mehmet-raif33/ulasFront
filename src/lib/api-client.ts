@@ -10,7 +10,7 @@ const API_CONFIG = {
 };
 
 // Types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   message?: string;
@@ -46,7 +46,7 @@ export class ApiClientError extends Error {
 interface RequestConfig {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   timeout?: number;
   retries?: number;
 }
@@ -91,7 +91,7 @@ class ApiClient {
   }
 
   // Check if error is retryable
-  private isRetryableError(error: any): boolean {
+  private isRetryableError(error: unknown): boolean {
     if (error instanceof ApiClientError) {
       return [408, 429, 500, 502, 503, 504].includes(error.statusCode);
     }
@@ -166,11 +166,11 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'GET', headers });
   }
 
-  async post<T>(endpoint: string, body: any, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, body: unknown, headers?: Record<string, string>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'POST', body, headers });
   }
 
-  async put<T>(endpoint: string, body: any, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, body: unknown, headers?: Record<string, string>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'PUT', body, headers });
   }
 
@@ -178,7 +178,7 @@ class ApiClient {
     return this.request<T>(endpoint, { method: 'DELETE', headers });
   }
 
-  async patch<T>(endpoint: string, body: any, headers?: Record<string, string>): Promise<ApiResponse<T>> {
+  async patch<T>(endpoint: string, body: unknown, headers?: Record<string, string>): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'PATCH', body, headers });
   }
 
@@ -224,7 +224,7 @@ export const api = {
     apiClient.authenticatedRequest(`/user/${userId}`, token),
 
   // Transaction endpoints
-  getTransactions: (token: string, params?: Record<string, any>) => {
+  getTransactions: (token: string, params?: Record<string, string>) => {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
     return apiClient.authenticatedRequest(`/transactions${queryString}`, token);
   },
@@ -232,13 +232,13 @@ export const api = {
   getTransaction: (token: string, id: string) =>
     apiClient.authenticatedRequest(`/transactions/${id}`, token),
 
-  createTransaction: (token: string, data: any) =>
+  createTransaction: (token: string, data: unknown) =>
     apiClient.authenticatedRequest('/transactions', token, {
       method: 'POST',
       body: data
     }),
 
-  updateTransaction: (token: string, id: string, data: any) =>
+  updateTransaction: (token: string, id: string, data: unknown) =>
     apiClient.authenticatedRequest(`/transactions/${id}`, token, {
       method: 'PUT',
       body: data
@@ -250,12 +250,12 @@ export const api = {
     }),
 
   // Vehicle endpoints
-  getVehicles: (token: string, params?: Record<string, any>) => {
+  getVehicles: (token: string, params?: Record<string, string>) => {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
     return apiClient.authenticatedRequest(`/vehicles${queryString}`, token);
   },
 
-  getCustomers: (token: string, params?: Record<string, any>) => {
+  getCustomers: (token: string, params?: Record<string, string>) => {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
     return apiClient.authenticatedRequest(`/vehicles/customers${queryString}`, token);
   },
@@ -263,13 +263,13 @@ export const api = {
   getVehicle: (token: string, plate: string) =>
     apiClient.authenticatedRequest(`/vehicles/${plate}`, token),
 
-  createVehicle: (token: string, data: any) =>
+  createVehicle: (token: string, data: unknown) =>
     apiClient.authenticatedRequest('/vehicles', token, {
       method: 'POST',
       body: data
     }),
 
-  updateVehicle: (token: string, plate: string, data: any) =>
+  updateVehicle: (token: string, plate: string, data: unknown) =>
     apiClient.authenticatedRequest(`/vehicles/${plate}`, token, {
       method: 'PUT',
       body: data
@@ -281,7 +281,7 @@ export const api = {
     }),
 
   // Personnel endpoints
-  getPersonnel: (token: string, params?: Record<string, any>) => {
+  getPersonnel: (token: string, params?: Record<string, string>) => {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
     return apiClient.authenticatedRequest(`/personnel${queryString}`, token);
   },
@@ -289,13 +289,13 @@ export const api = {
   getPersonnelById: (token: string, id: string) =>
     apiClient.authenticatedRequest(`/personnel/${id}`, token),
 
-  createPersonnel: (token: string, data: any) =>
+  createPersonnel: (token: string, data: unknown) =>
     apiClient.authenticatedRequest('/personnel', token, {
       method: 'POST',
       body: data
     }),
 
-  updatePersonnel: (token: string, id: string, data: any) =>
+  updatePersonnel: (token: string, id: string, data: unknown) =>
     apiClient.authenticatedRequest(`/personnel/${id}`, token, {
       method: 'PUT',
       body: data

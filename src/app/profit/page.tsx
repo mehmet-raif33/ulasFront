@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { RootState } from "../redux/store";
@@ -254,7 +254,7 @@ const ProfitPage: React.FC = () => {
   }, [isLoggedIn, user, router]);
 
   // API'den kar verisi çeken fonksiyonlar
-  const loadMonthlyRevenue = async () => {
+  const loadMonthlyRevenue = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -324,13 +324,14 @@ const ProfitPage: React.FC = () => {
         setError(errorData.message || 'Aylık kar alınamadı');
       }
     } catch (error: unknown) {
+      console.error('Error loading monthly profit:', error);
       setError('Aylık kar yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYear, selectedMonth, selectedCategoriesForMonthly]);
 
-  const loadYearlyRevenue = async () => {
+  const loadYearlyRevenue = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -416,13 +417,14 @@ const ProfitPage: React.FC = () => {
         setError(errorData.message || 'Yıllık kar alınamadı');
       }
     } catch (error: unknown) {
+      console.error('Error loading yearly profit:', error);
       setError('Yıllık kar yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYearForYearly, selectedCategoriesForYearly]);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
@@ -442,7 +444,7 @@ const ProfitPage: React.FC = () => {
     } catch (error) {
       console.error('Kategoriler yüklenirken hata:', error);
     }
-  };
+  }, []);
 
   const generateWeeklyOptions = (year?: number) => {
     const options: Array<{value: string, label: string}> = [];
@@ -555,6 +557,7 @@ const ProfitPage: React.FC = () => {
         setError(errorData.message || 'Haftalık kar alınamadı');
       }
     } catch (error: unknown) {
+      console.error('Error loading weekly profit:', error);
       setError('Haftalık kar yüklenirken hata oluştu');
     } finally {
       setLoading(false);
@@ -620,6 +623,7 @@ const ProfitPage: React.FC = () => {
         setError(errorData.message || 'Günlük kar alınamadı');
       }
     } catch (error: unknown) {
+      console.error('Error loading daily profit:', error);
       setError('Günlük kar yüklenirken hata oluştu');
     } finally {
       setLoading(false);
@@ -639,37 +643,37 @@ const ProfitPage: React.FC = () => {
         loadDailyRevenue();
       }
     }
-  }, [isLoggedIn, user, activeTab, selectedYear, selectedMonth, selectedYearForYearly, selectedStartDate, selectedEndDate, selectedWeek]);
+  }, [isLoggedIn, user, activeTab, selectedYear, selectedMonth, selectedYearForYearly, selectedStartDate, selectedEndDate, selectedWeek]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin' && activeTab === 'monthly') {
       loadMonthlyRevenue();
     }
-  }, [selectedCategoriesForMonthly]);
+  }, [selectedCategoriesForMonthly]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin' && activeTab === 'yearly') {
       loadYearlyRevenue();
     }
-  }, [selectedCategoriesForYearly]);
+  }, [selectedCategoriesForYearly, activeTab, isLoggedIn, loadYearlyRevenue, user?.role]);
 
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin' && activeTab === 'weekly') {
       loadWeeklyRevenue();
     }
-  }, [selectedCategoriesForWeekly]);
+  }, [selectedCategoriesForWeekly, activeTab, isLoggedIn, loadWeeklyRevenue, user?.role]);
 
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin' && activeTab === 'daily') {
       loadDailyRevenue();
     }
-  }, [selectedCategoriesForDaily, selectedDailyDate]);
+  }, [selectedCategoriesForDaily, selectedDailyDate, activeTab, isLoggedIn, loadDailyRevenue, user?.role]);
 
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin') {
       loadCategories();
     }
-  }, [isLoggedIn, user]);
+  }, [isLoggedIn, user, loadCategories]);
 
   useEffect(() => {
     if (activeTab === 'weekly') {
@@ -679,19 +683,19 @@ const ProfitPage: React.FC = () => {
         loadWeeklyRevenue();
       }
     }
-  }, [activeTab, selectedWeek, selectedStartDate, selectedEndDate, selectedYearForWeekly]);
+  }, [activeTab, selectedWeek, selectedStartDate, selectedEndDate, selectedYearForWeekly, generateWeeklyOptions, loadWeeklyRevenue, weeklyOptions.length]);
 
   useEffect(() => {
     if (activeTab === 'weekly') {
       generateWeeklyOptions(selectedYearForWeekly);
     }
-  }, [selectedYearForWeekly, activeTab]);
+  }, [selectedYearForWeekly, activeTab, generateWeeklyOptions]);
 
   useEffect(() => {
     if (activeTab === 'daily' && selectedDailyDate) {
       loadDailyRevenue();
     }
-  }, [activeTab, selectedDailyDate]);
+  }, [activeTab, selectedDailyDate, loadDailyRevenue]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('tr-TR', {
@@ -908,7 +912,7 @@ const ProfitPage: React.FC = () => {
   );
 
   // Enhanced Summary Cards Component
-  const SummaryCards = ({ data }: { data: any }) => {
+  const SummaryCards = ({ data }: { data: MonthlyProfit | YearlyProfit | WeeklyProfit }) => {
     const cards = [
       {
         title: 'Toplam Gelir',
@@ -992,7 +996,7 @@ const ProfitPage: React.FC = () => {
   // Enhanced Table Components
   const EnhancedTable = ({ title, data, columns, icon }: { 
     title: string; 
-    data: any[]; 
+    data: Array<Record<string, any>>; // eslint-disable-line @typescript-eslint/no-explicit-any
     columns: Array<{key: string; label: string; isProfit?: boolean}>;
     icon: string;
   }) => {
@@ -1102,7 +1106,18 @@ const ProfitPage: React.FC = () => {
     );
   };
 
-  const TransactionTable = ({ transactions }: { transactions: any[] }) => {
+  const TransactionTable = ({ transactions }: { transactions: Array<{
+    id: string;
+    amount: number;
+    expense: number;
+    profit: number;
+    description: string;
+    transaction_date: string;
+    category_name: string;
+    vehicle_plate: string;
+    personnel_name: string;
+    is_expense: boolean;
+  }> }) => {
     const [sortKey, setSortKey] = useState<'transaction_date' | 'amount' | 'profit'>('transaction_date');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -1324,7 +1339,7 @@ const ProfitPage: React.FC = () => {
               ].map((tab) => (
                 <motion.button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as 'monthly' | 'yearly' | 'weekly' | 'daily')}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={`flex flex-col items-center gap-2 px-6 py-4 rounded-2xl font-bold transition-all duration-300 ${

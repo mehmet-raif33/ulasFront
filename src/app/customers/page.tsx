@@ -68,8 +68,8 @@ const CustomersPage: React.FC = () => {
       }
 
       const response = await api.getCustomers(token, {
-        page,
-        limit: pagination.limit,
+        page: page.toString(),
+        limit: pagination.limit.toString(),
         search: search.trim()
       });
 
@@ -86,13 +86,16 @@ const CustomersPage: React.FC = () => {
         }));
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching customers:', error);
-      if (error.statusCode === 401) {
+      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 401) {
         router.push('/auth');
         return;
       }
-      setError(error?.message || 'Müşteriler yüklenirken hata oluştu');
+      const errorMessage = error && typeof error === 'object' && 'message' in error 
+        ? (error as { message: string }).message 
+        : 'Müşteriler yüklenirken hata oluştu';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

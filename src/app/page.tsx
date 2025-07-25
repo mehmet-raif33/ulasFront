@@ -34,7 +34,7 @@ interface Activity {
   action: string;
   user_name?: string;
   created_at?: string;
-  meta?: any;
+  meta?: Record<string, unknown>;
 }
 
 export default function Home() {
