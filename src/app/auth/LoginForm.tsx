@@ -4,7 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { login, setError, setLoading } from "../redux/sliceses/authSlices";
 import { RootState } from "../redux/store";
-import { loginApi } from "../api";
+import { authApi } from "../../lib/api-endpoints";
+import { tokenManager } from "../../lib/token-manager";
 import { broadcastLogin } from "../utils/broadcastChannel";
 
 const LoginForm: React.FC = () => {
@@ -41,26 +42,42 @@ const LoginForm: React.FC = () => {
     setLoadingState(true);
     
     try {
-      const data = await loginApi({ username, password });
+      console.log('🔐 Attempting login with enhanced API...');
       
-      // Token'ı localStorage'a kaydet
-      localStorage.setItem("token", data.token);
+      // Enhanced API client ile login yap
+      const response = await authApi.login({ username, password });
       
-      // Kullanıcı bilgisini Redux'a kaydet
+      if (!response.data) {
+        throw new Error('Login response data is missing');
+      }
+      
+      const { user, token } = response.data;
+      
+      // Kullanıcı bilgisini normalize et
       const userData = {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.username || data.user.name || "",
-        role: data.user.role === "admin" ? "admin" : "user" as "admin" | "user",
+        id: user.id.toString(),
+        email: user.email,
+        name: user.username || user.full_name || user.name || "",
+        role: user.role === "admin" ? "admin" : "user" as "admin" | "user",
       };
       
+      console.log('✅ Login successful, setting up token manager...');
+      
+      // Token manager ile token'ı ve user bilgisini kaydet
+      await tokenManager.setTokens(token, userData);
+      
+      // Redux state'i güncelle
       dispatch(login(userData));
       
-      // Diğer sekmelere login mesajı gönder
+      console.log('📡 Broadcasting login to other tabs...');
+      
+      // Diğer sekmelere login mesajı gönder (Token manager zaten bunu yapıyor ama ekstra güvenlik için)
       broadcastLogin(userData);
       
       // Başarı mesajı göster
       setSuccessMessage('Giriş başarılı! Yönlendiriliyorsunuz...');
+      
+      console.log('🔄 Redirecting to dashboard...');
       
       // Kısa bir süre sonra anasayfaya yönlendir
       setTimeout(() => {
@@ -68,12 +85,30 @@ const LoginForm: React.FC = () => {
       }, 1500);
       
     } catch (err: unknown) {
+      console.error('❌ Login failed:', err);
+      
       let message = "Bir hata oluştu";
-      if (typeof err === "object" && err && "message" in err) {
-        message = (err as { message?: string }).message || message;
+      
+      // Enhanced error handling
+      if (err && typeof err === "object") {
+        if ('message' in err) {
+          message = (err as { message?: string }).message || message;
+        } else if ('data' in err && err.data && typeof err.data === 'object' && 'message' in err.data) {
+          message = (err.data as { message?: string }).message || message;
+        }
       } else if (typeof err === "string") {
         message = err;
       }
+      
+      // Specific error messages
+      if (message.includes('401') || message.includes('Unauthorized') || message.includes('Invalid credentials')) {
+        message = 'Kullanıcı adı veya şifre hatalı';
+      } else if (message.includes('Network') || message.includes('fetch')) {
+        message = 'Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.';
+      } else if (message.includes('timeout')) {
+        message = 'İstek zaman aşımına uğradı. Lütfen tekrar deneyin.';
+      }
+      
       setFormError(message);
       dispatch(setError(message));
     } finally {

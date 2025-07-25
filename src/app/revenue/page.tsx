@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { RootState } from "../redux/store";
@@ -186,21 +186,8 @@ const RevenuePage: React.FC = () => {
   const [selectedCategoriesForWeekly, setSelectedCategoriesForWeekly] = useState<number[]>([]);
   const [selectedCategoriesForDaily, setSelectedCategoriesForDaily] = useState<number[]>([]);
 
-  // Giriş yapmamış kullanıcıları landing page'e yönlendir
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/landing');
-    }
-  }, [isLoggedIn, router]);
-
-  // Admin olmayan kullanıcıları ana sayfaya yönlendir
-  useEffect(() => {
-    if (isLoggedIn && user?.role !== 'admin') {
-      router.push('/');
-    }
-  }, [isLoggedIn, user, router]);
-
-  const loadMonthlyRevenue = async () => {
+  // Memoized API functions
+  const loadMonthlyRevenue = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -269,9 +256,9 @@ const RevenuePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYear, selectedMonth, selectedCategoriesForMonthly]);
 
-  const loadYearlyRevenue = async () => {
+  const loadYearlyRevenue = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -355,9 +342,9 @@ const RevenuePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYearForYearly, selectedCategoriesForYearly]);
 
-  const loadCategories = async () => {
+  const loadCategories = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -381,9 +368,9 @@ const RevenuePage: React.FC = () => {
     } catch (error) {
       console.error('Kategoriler yüklenirken hata:', error);
     }
-  };
+  }, []);
 
-  const generateWeeklyOptions = (year?: number) => {
+  const generateWeeklyOptions = useCallback((year?: number) => {
     const options: Array<{value: string, label: string}> = [];
     const targetYear = year || selectedYearForWeekly;
     
@@ -437,9 +424,9 @@ const RevenuePage: React.FC = () => {
     setSelectedWeek(defaultValue);
     setSelectedStartDate(defaultStartDate);
     setSelectedEndDate(defaultEndDate);
-  };
+  }, [selectedYearForWeekly]);
 
-  const loadWeeklyRevenue = async () => {
+  const loadWeeklyRevenue = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -500,9 +487,9 @@ const RevenuePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedStartDate, selectedEndDate, selectedCategoriesForWeekly]);
 
-  const loadDailyRevenue = async () => {
+  const loadDailyRevenue = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -564,81 +551,63 @@ const RevenuePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDailyDate, selectedCategoriesForDaily]);
 
-  // Ana data loading effect - sadece temel parametreler için
+  // Tek merkezi data loading effect
   useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin') {
-      if (activeTab === 'monthly') {
+    if (!isLoggedIn || user?.role !== 'admin') return;
+
+    switch (activeTab) {
+      case 'monthly':
         loadMonthlyRevenue();
-      } else if (activeTab === 'yearly') {
+        break;
+      case 'yearly':
         loadYearlyRevenue();
-      } else if (activeTab === 'weekly') {
+        break;
+      case 'weekly':
         loadWeeklyRevenue();
-      } else if (activeTab === 'daily') {
+        break;
+      case 'daily':
         loadDailyRevenue();
-      }
+        break;
     }
-  }, [isLoggedIn, user, activeTab, selectedYear, selectedMonth, selectedYearForYearly, selectedStartDate, selectedEndDate, selectedWeek]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Kategori filtreleri için ayrı effect'ler
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin' && activeTab === 'monthly') {
-      loadMonthlyRevenue();
-    }
-  }, [selectedCategoriesForMonthly]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin' && activeTab === 'yearly') {
-      loadYearlyRevenue();
-    }
-  }, [selectedCategoriesForYearly]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin' && activeTab === 'weekly') {
-      loadWeeklyRevenue();
-    }
-  }, [selectedCategoriesForWeekly]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin' && activeTab === 'daily') {
-      loadDailyRevenue();
-    }
-  }, [selectedCategoriesForDaily, selectedDailyDate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    isLoggedIn, 
+    user, 
+    activeTab, 
+    loadMonthlyRevenue, 
+    loadYearlyRevenue, 
+    loadWeeklyRevenue, 
+    loadDailyRevenue
+  ]);
 
   // İlk yüklemede kategorileri yükle
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin') {
       loadCategories();
     }
-  }, [isLoggedIn, user]);
+  }, [isLoggedIn, user, loadCategories]);
 
-  // Haftalık ciro sekmesi açıldığında hafta seçeneklerini oluştur ve veri yükle
+  // Haftalık seçenekleri oluştur
   useEffect(() => {
     if (activeTab === 'weekly') {
-      if (weeklyOptions.length === 0) {
-        generateWeeklyOptions();
-      } else if (selectedWeek && selectedStartDate && selectedEndDate) {
-        loadWeeklyRevenue();
-      }
+      generateWeeklyOptions();
     }
-  }, [activeTab, selectedWeek, selectedStartDate, selectedEndDate, selectedYearForWeekly]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab, generateWeeklyOptions]);
 
-  // Yıl değişikliğinde hafta seçeneklerini yeniden oluştur
+  // Giriş yapmamış kullanıcıları landing page'e yönlendir
   useEffect(() => {
-    if (activeTab === 'weekly') {
-      generateWeeklyOptions(selectedYearForWeekly);
+    if (!isLoggedIn) {
+      router.push('/landing');
     }
-  }, [selectedYearForWeekly, activeTab, generateWeeklyOptions]);
+  }, [isLoggedIn, router]);
 
-  // Günlük ciro sekmesi açıldığında otomatik veri yükle
+  // Admin olmayan kullanıcıları ana sayfaya yönlendir
   useEffect(() => {
-    if (activeTab === 'daily' && selectedDailyDate) {
-      loadDailyRevenue();
+    if (isLoggedIn && user?.role !== 'admin') {
+      router.push('/');
     }
-  }, [activeTab, selectedDailyDate, loadDailyRevenue]);
-
-
+  }, [isLoggedIn, user, router]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('tr-TR', {
@@ -1676,27 +1645,27 @@ const RevenuePage: React.FC = () => {
                   theme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
                 } shadow-sm`}>
                   <div className="flex flex-col lg:flex-row gap-4 items-start">
-                        <div className="w-full lg:w-auto">
-                          <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                    <div className="w-full lg:w-auto">
+                      <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                         Tarih Seçimi
-                          </label>
-                          <input
-                            type="date"
+                      </label>
+                      <input
+                        type="date"
                         value={selectedDailyDate}
                         onChange={(e) => setSelectedDailyDate(e.target.value)}
                         className={`px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 w-full ${
-                              theme === 'dark' 
+                          theme === 'dark' 
                             ? 'bg-slate-700 border-slate-600 text-gray-200' 
-                                : 'bg-white border-gray-300 text-gray-900'
-                            }`}
-                          />
-                        </div>
+                            : 'bg-white border-gray-300 text-gray-900'
+                        }`}
+                      />
+                    </div>
                     <div className="flex-1 min-w-0 w-full lg:w-auto">
-                        <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                      <label className={`block text-sm font-medium mb-1 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
                         Kategoriler
-                        </label>
+                      </label>
                       <div className={`p-3 border rounded-lg max-h-32 overflow-y-auto ${
-                            theme === 'dark' 
+                        theme === 'dark' 
                           ? 'bg-slate-700 border-slate-600' 
                           : 'bg-white border-gray-300'
                       }`}>
@@ -1786,8 +1755,8 @@ const RevenuePage: React.FC = () => {
                           </div>
                           <div className={`p-3 rounded-full flex-shrink-0 ${theme === 'dark' ? 'bg-green-900/50' : 'bg-green-100'}`}>
                             <span className="text-2xl">💰</span>
-                        </div>
                           </div>
+                        </div>
                       </motion.div>
 
                       <motion.div
@@ -1825,134 +1794,64 @@ const RevenuePage: React.FC = () => {
                             <p className={`text-xl md:text-2xl font-bold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                               {formatCurrency(dailyData.summary.averageTransaction)}
                             </p>
-                  </div>
+                          </div>
                           <div className={`p-3 rounded-full flex-shrink-0 ${theme === 'dark' ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
                             <span className="text-2xl">📈</span>
-                    </div>
-                  </div>
+                          </div>
+                        </div>
                       </motion.div>
                     </div>
 
-                    {/* Daily Breakdown */}
-                    {(() => {
-                      if (dailyData.dailyBreakdown && dailyData.dailyBreakdown.length > 0) {
-                        // Backend'den gelen dailyBreakdown varsa onu kullan
-                        return (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: 0.4 }}
-                    className={`p-6 rounded-xl shadow-lg ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}
-                  >
-                    <h3 className={`text-lg font-semibold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                              Seçilen Gün Detayı
-                    </h3>
-                            <div className="flex justify-center">
-                              {dailyData.dailyBreakdown.map((day) => (
-                                                                  <div key={day.day} className="text-center max-w-md w-full">
-                                  <div className={`p-8 rounded-xl border-2 ${
-                                    theme === 'dark' 
-                                      ? 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-slate-600' 
-                                      : 'bg-gradient-to-br from-gray-50 to-white border-gray-300'
-                                  }`}>
-                                    <div className={`text-4xl mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                                      📅
-                                    </div>
-                                    <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                                      {day.dayName}
-                                    </p>
-                                    <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                      {new Date(day.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                    </p>
-                                    <div className={`mt-6 p-4 rounded-lg ${
-                                      theme === 'dark' ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-200'
-                                    }`}>
-                                      <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>
-                                        {formatCurrency(day.revenue)}
-                                      </p>
-                                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        Toplam Ciro
-                        </p>
-                      </div>
-                                    <div className={`mt-4 p-3 rounded-lg ${
-                                      theme === 'dark' ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50 border border-blue-200'
-                                    }`}>
-                                      <p className={`text-xl font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
-                                        {day.transactionCount}
-                                      </p>
-                                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                        İşlem Sayısı
-                        </p>
-                      </div>
-                                  </div>
-                                </div>
-                              ))}
+                    {/* Daily Details */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.4 }}
+                      className={`p-6 rounded-xl shadow-lg ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}
+                    >
+                      <h3 className={`text-lg font-semibold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        Seçilen Gün Detayı
+                      </h3>
+                      <div className="flex justify-center">
+                        <div className="text-center max-w-md w-full">
+                          <div className={`p-8 rounded-xl border-2 ${
+                            theme === 'dark' 
+                              ? 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-slate-600' 
+                              : 'bg-gradient-to-br from-gray-50 to-white border-gray-300'
+                          }`}>
+                            <div className={`text-4xl mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                              📅
                             </div>
-                          </motion.div>
-                        );
-                      } else {
-                        // Backend'den dailyBreakdown yoksa, summary'den gün verisi oluştur
-                        const selectedDate = new Date(selectedDailyDate);
-                        const dayData = {
-                          day: selectedDate.getDay() + 1,
-                          dayName: selectedDate.toLocaleDateString('tr-TR', { weekday: 'long' }),
-                          date: selectedDailyDate,
-                          revenue: dailyData.summary.totalRevenue,
-                          transactionCount: dailyData.summary.transactionCount
-                        };
-                        return (
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: 0.4 }}
-                            className={`p-6 rounded-xl shadow-lg ${theme === 'dark' ? 'bg-slate-800' : 'bg-white'}`}
-                          >
-                            <h3 className={`text-lg font-semibold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                              Seçilen Gün Detayı
-                            </h3>
-                            <div className="flex justify-center">
-                              <div className="text-center max-w-md w-full">
-                                <div className={`p-8 rounded-xl border-2 ${
-                                  theme === 'dark' 
-                                    ? 'bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-slate-600' 
-                                    : 'bg-gradient-to-br from-gray-50 to-white border-gray-300'
-                                }`}>
-                                  <div className={`text-4xl mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    📅
-                                  </div>
-                                  <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                                    {dayData.dayName}
-                                  </p>
-                                  <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                    {selectedDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                  </p>
-                                  <div className={`mt-6 p-4 rounded-lg ${
-                                    theme === 'dark' ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-200'
-                                  }`}>
-                                    <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>
-                                      {formatCurrency(dayData.revenue)}
-                                    </p>
-                                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                      Toplam Ciro
-                                    </p>
-                                  </div>
-                                  <div className={`mt-4 p-3 rounded-lg ${
-                                    theme === 'dark' ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50 border border-blue-200'
-                                  }`}>
-                                    <p className={`text-xl font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
-                                      {dayData.transactionCount}
-                                    </p>
-                                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                      İşlem Sayısı
-                                    </p>
-                                  </div>
-                                </div>
+                            <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                              {new Date(selectedDailyDate).toLocaleDateString('tr-TR', { weekday: 'long' })}
+                            </p>
+                            <p className={`text-lg ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {new Date(selectedDailyDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                            <div className={`mt-6 p-4 rounded-lg ${
+                              theme === 'dark' ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-200'
+                            }`}>
+                              <p className={`text-3xl font-bold ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>
+                                {formatCurrency(dailyData.summary.totalRevenue)}
+                              </p>
+                              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Toplam Ciro
+                              </p>
+                            </div>
+                            <div className={`mt-4 p-3 rounded-lg ${
+                              theme === 'dark' ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50 border border-blue-200'
+                            }`}>
+                              <p className={`text-xl font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
+                                {dailyData.summary.transactionCount}
+                              </p>
+                              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                İşlem Sayısı
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                        );
-                      }
-                })()}
+                    </motion.div>
 
                     {/* İşlem Listesi */}
                     {dailyData.transactions && dailyData.transactions.length > 0 && (
@@ -2036,4 +1935,4 @@ const RevenuePage: React.FC = () => {
   );
 };
 
-export default RevenuePage; 
+export default RevenuePage;

@@ -446,7 +446,7 @@ const ProfitPage: React.FC = () => {
     }
   }, []);
 
-  const generateWeeklyOptions = (year?: number) => {
+  const generateWeeklyOptions = useCallback((year?: number) => {
     const options: Array<{value: string, label: string}> = [];
     const targetYear = year || selectedYearForWeekly;
     
@@ -496,9 +496,9 @@ const ProfitPage: React.FC = () => {
     setSelectedWeek(defaultValue);
     setSelectedStartDate(defaultStartDate);
     setSelectedEndDate(defaultEndDate);
-  };
+  }, [selectedYearForWeekly]);
 
-  const loadWeeklyRevenue = async () => {
+  const loadWeeklyRevenue = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -562,9 +562,9 @@ const ProfitPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedStartDate, selectedEndDate, selectedCategoriesForWeekly]);
 
-  const loadDailyRevenue = async () => {
+  const loadDailyRevenue = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -628,74 +628,64 @@ const ProfitPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDailyDate, selectedCategoriesForDaily]);
 
-  // Effects
+  // Centralized data loading effect
   useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin') {
-      if (activeTab === 'monthly') {
+    if (!isLoggedIn || user?.role !== 'admin') return;
+
+    switch (activeTab) {
+      case 'monthly':
         loadMonthlyRevenue();
-      } else if (activeTab === 'yearly') {
+        break;
+      case 'yearly':
         loadYearlyRevenue();
-      } else if (activeTab === 'weekly') {
+        break;
+      case 'weekly':
         loadWeeklyRevenue();
-      } else if (activeTab === 'daily') {
+        break;
+      case 'daily':
         loadDailyRevenue();
-      }
+        break;
     }
-  }, [isLoggedIn, user, activeTab, selectedYear, selectedMonth, selectedYearForYearly, selectedStartDate, selectedEndDate, selectedWeek]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    isLoggedIn,
+    user?.role,
+    activeTab,
+    // Monthly dependencies
+    selectedYear,
+    selectedMonth,
+    selectedCategoriesForMonthly,
+    // Yearly dependencies
+    selectedYearForYearly,
+    selectedCategoriesForYearly,
+    // Weekly dependencies
+    selectedStartDate,
+    selectedEndDate,
+    selectedCategoriesForWeekly,
+    // Daily dependencies
+    selectedDailyDate,
+    selectedCategoriesForDaily,
+    // Memoized functions
+    loadMonthlyRevenue,
+    loadYearlyRevenue,
+    loadWeeklyRevenue,
+    loadDailyRevenue
+  ]);
 
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin' && activeTab === 'monthly') {
-      loadMonthlyRevenue();
-    }
-  }, [selectedCategoriesForMonthly]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin' && activeTab === 'yearly') {
-      loadYearlyRevenue();
-    }
-  }, [selectedCategoriesForYearly, activeTab, isLoggedIn, loadYearlyRevenue, user?.role]);
-
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin' && activeTab === 'weekly') {
-      loadWeeklyRevenue();
-    }
-  }, [selectedCategoriesForWeekly, activeTab, isLoggedIn, loadWeeklyRevenue, user?.role]);
-
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'admin' && activeTab === 'daily') {
-      loadDailyRevenue();
-    }
-  }, [selectedCategoriesForDaily, selectedDailyDate, activeTab, isLoggedIn, loadDailyRevenue, user?.role]);
-
+  // Load categories once
   useEffect(() => {
     if (isLoggedIn && user?.role === 'admin') {
       loadCategories();
     }
-  }, [isLoggedIn, user, loadCategories]);
+  }, [isLoggedIn, user?.role, loadCategories]);
 
-  useEffect(() => {
-    if (activeTab === 'weekly') {
-      if (weeklyOptions.length === 0) {
-        generateWeeklyOptions();
-      } else if (selectedWeek && selectedStartDate && selectedEndDate) {
-        loadWeeklyRevenue();
-      }
-    }
-  }, [activeTab, selectedWeek, selectedStartDate, selectedEndDate, selectedYearForWeekly, generateWeeklyOptions, loadWeeklyRevenue, weeklyOptions.length]);
-
+  // Generate weekly options when needed
   useEffect(() => {
     if (activeTab === 'weekly') {
       generateWeeklyOptions(selectedYearForWeekly);
     }
-  }, [selectedYearForWeekly, activeTab, generateWeeklyOptions]);
-
-  useEffect(() => {
-    if (activeTab === 'daily' && selectedDailyDate) {
-      loadDailyRevenue();
-    }
-  }, [activeTab, selectedDailyDate, loadDailyRevenue]);
+  }, [activeTab, selectedYearForWeekly, generateWeeklyOptions]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('tr-TR', {

@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
@@ -54,60 +54,71 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
         }
     }, [isLoggedIn, router]);
 
-    // Handle async params
-    useEffect(() => {
-        const getParams = async () => {
+    // Handle async params - optimize with useCallback
+    const handleParams = useCallback(async () => {
+        try {
             const resolvedParams = await params;
             setPlate(resolvedParams.plate);
-        };
-        getParams();
+        } catch (error) {
+            console.error('Error resolving params:', error);
+        }
     }, [params]);
 
-    // Load vehicle data and transactions
     useEffect(() => {
-        if (!plate || !isLoggedIn) return;
+        handleParams();
+    }, [handleParams]);
 
-        const loadData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    setError('Token bulunamadı');
-                    return;
-                }
+    // Data loading function - optimize with useCallback
+    const loadData = useCallback(async (vehiclePlate: string) => {
+        if (!vehiclePlate || !isLoggedIn) return;
 
-                setIsLoading(true);
-                setError(null);
-
-                // Load vehicle and transactions in parallel
-                const [vehicleResponse, transactionsResponse] = await Promise.all([
-                    getVehicleApi(token, plate),
-                    getTransactionsByVehicleApi(token, plate)
-                ]);
-
-                setVehicle(vehicleResponse.data);
-                setTransactions(transactionsResponse.data || []);
-            } catch (error: unknown) {
-                console.error('Error loading vehicle data:', error);
-                let errorMessage = 'Araç bilgileri yüklenirken hata oluştu';
-                if (error && typeof error === 'object' && 'message' in error) {
-                    errorMessage += `: ${(error as { message?: string }).message}`;
-                }
-                setError(errorMessage);
-            } finally {
-                setIsLoading(false);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setError('Token bulunamadı');
+                return;
             }
-        };
 
-        loadData();
-    }, [plate, isLoggedIn]);
+            setIsLoading(true);
+            setError(null);
 
-    // Calculate transaction statistics
-    const totalAmount = transactions.reduce((sum, transaction) => {
-        const amount = typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : transaction.amount;
-        return sum + (amount || 0);
-    }, 0);
-    const averageAmount = transactions.length > 0 ? totalAmount / transactions.length : 0;
-    // const recentTransactions = transactions.slice(0, 5); // Last 5 transactions
+            // Load vehicle and transactions in parallel
+            const [vehicleResponse, transactionsResponse] = await Promise.all([
+                getVehicleApi(token, vehiclePlate),
+                getTransactionsByVehicleApi(token, vehiclePlate)
+            ]);
+
+            setVehicle(vehicleResponse.data);
+            setTransactions(transactionsResponse.data || []);
+        } catch (error: unknown) {
+            console.error('Error loading vehicle data:', error);
+            let errorMessage = 'Araç bilgileri yüklenirken hata oluştu';
+            if (error && typeof error === 'object' && 'message' in error) {
+                errorMessage += `: ${(error as { message?: string }).message}`;
+            }
+            setError(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [isLoggedIn]);
+
+    // Load data when plate changes
+    useEffect(() => {
+        if (plate) {
+            loadData(plate);
+        }
+    }, [plate, loadData]);
+
+    // Calculate transaction statistics - optimize with useMemo
+    const transactionStats = React.useMemo(() => {
+        const totalAmount = transactions.reduce((sum, transaction) => {
+            const amount = typeof transaction.amount === 'string' ? parseFloat(transaction.amount) : transaction.amount;
+            return sum + (amount || 0);
+        }, 0);
+        const averageAmount = transactions.length > 0 ? totalAmount / transactions.length : 0;
+        
+        return { totalAmount, averageAmount };
+    }, [transactions]);
 
     // Giriş yapmamış kullanıcılar için loading göster
     if (!isLoggedIn) {
@@ -222,7 +233,7 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
                                     </div>
                                     <div className={`text-center p-4 rounded-lg ${theme === 'dark' ? 'bg-yellow-900/50' : 'bg-yellow-50'}`}>
                                         <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Toplam Tutar</p>
-                                        <p className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>₺{totalAmount.toLocaleString()}</p>
+                                        <p className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>₺{transactionStats.totalAmount.toLocaleString()}</p>
                                     </div>
                                 </div>
                             </div>
@@ -237,27 +248,27 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
                     transition={{ duration: 0.3, delay: 0.2 }}
                     className="mb-6"
                 >
-                                    <div className={`flex flex-wrap justify-center gap-2 p-1 rounded-lg ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-white/80'}`}>
-                    {[
-                        { id: "overview", name: "Genel Bakış", icon: "📊" },
-                        { id: "transactions", name: "İşlemler", icon: "📋" }
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center justify-center space-x-2 py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
-                                activeTab === tab.id
-                                    ? "bg-blue-600 text-white shadow-lg"
-                                    : theme === 'dark' 
-                                        ? "text-gray-300 hover:text-gray-100 hover:bg-slate-700"
-                                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                            }`}
-                        >
-                            <span>{tab.icon}</span>
-                            <span>{tab.name}</span>
-                        </button>
-                    ))}
-                </div>
+                    <div className={`flex flex-wrap justify-center gap-2 p-1 rounded-lg ${theme === 'dark' ? 'bg-slate-800/50' : 'bg-white/80'}`}>
+                        {[
+                            { id: "overview", name: "Genel Bakış", icon: "📊" },
+                            { id: "transactions", name: "İşlemler", icon: "📋" }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center justify-center space-x-2 py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
+                                    activeTab === tab.id
+                                        ? "bg-blue-600 text-white shadow-lg"
+                                        : theme === 'dark' 
+                                            ? "text-gray-300 hover:text-gray-100 hover:bg-slate-700"
+                                            : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                                }`}
+                            >
+                                <span>{tab.icon}</span>
+                                <span>{tab.name}</span>
+                            </button>
+                        ))}
+                    </div>
                 </motion.div>
 
                 {/* Tab Content */}
@@ -268,7 +279,7 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
                     className="space-y-6"
                 >
                     {activeTab === "overview" && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             {/* Vehicle Details */}
                             <div className={`p-6 rounded-xl shadow-lg border ${
                                 theme === 'dark' 
@@ -300,6 +311,41 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
                                 </div>
                             </div>
 
+                            {/* Customer Details */}
+                            <div className={`p-6 rounded-xl shadow-lg border ${
+                                theme === 'dark' 
+                                    ? 'bg-slate-800/50 border-slate-700' 
+                                    : 'bg-white/80 border-gray-200'
+                            }`}>
+                                <h3 className={`text-xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                                    Müşteri Bilgileri
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className={`flex justify-between items-center py-2 border-b ${theme === 'dark' ? 'border-slate-600' : 'border-gray-200'}`}>
+                                        <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>E-posta:</span>
+                                        <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                                            {vehicle.customer_email || 'Belirtilmemiş'}
+                                        </span>
+                                    </div>
+                                    <div className={`flex justify-between items-center py-2 border-b ${theme === 'dark' ? 'border-slate-600' : 'border-gray-200'}`}>
+                                        <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Telefon:</span>
+                                        <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                                            {vehicle.customer_phone || 'Belirtilmemiş'}
+                                        </span>
+                                    </div>
+                                    <div className={`flex justify-between items-center py-2 ${theme === 'dark' ? 'border-slate-600' : 'border-gray-200'}`}>
+                                        <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Müşteri Durumu:</span>
+                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                            (vehicle.customer_email || vehicle.customer_phone)
+                                                ? theme === 'dark' ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'
+                                                : theme === 'dark' ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                            {(vehicle.customer_email || vehicle.customer_phone) ? 'Kayıtlı' : 'Eksik Bilgi'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Transaction Statistics */}
                             <div className={`p-6 rounded-xl shadow-lg border ${
                                 theme === 'dark' 
@@ -319,13 +365,13 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
                                     <div className={`flex justify-between items-center py-2 border-b ${theme === 'dark' ? 'border-slate-600' : 'border-gray-200'}`}>
                                         <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Toplam Tutar:</span>
                                         <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                                            ₺{totalAmount.toLocaleString()}
+                                            ₺{transactionStats.totalAmount.toLocaleString()}
                                         </span>
                                     </div>
                                     <div className={`flex justify-between items-center py-2 border-b ${theme === 'dark' ? 'border-slate-600' : 'border-gray-200'}`}>
                                         <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>Ortalama Tutar:</span>
                                         <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                                            ₺{averageAmount.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}
+                                            ₺{transactionStats.averageAmount.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center py-2">

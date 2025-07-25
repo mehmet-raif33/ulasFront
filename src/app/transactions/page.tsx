@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { selectIsLoggedIn } from '../redux/sliceses/authSlices';
@@ -86,23 +86,23 @@ const TransactionsPage: React.FC = () => {
     // URL parametrelerinden kategori ID'sini al ve filtreyi ayarla
     useEffect(() => {
         const categoryId = searchParams.get('category_id');
-        if (categoryId) {
+        if (categoryId && categoryId !== filters.category_id) {
             setFilters(prev => ({
                 ...prev,
                 category_id: categoryId
             }));
         }
-    }, [searchParams]);
+    }, [searchParams]); // filters.category_id'yi bağımlılıktan çıkardım
 
-    // İstatistikleri yükle
-    const loadStats = async (token: string) => {
+    // İstatistikleri yükle - useCallback ile optimize et
+    const loadStats = useCallback(async (token: string, currentFilters: typeof filters) => {
         try {
             const statsParams: Record<string, string> = {};
             
             // Filtreleri istatistik parametrelerine ekle
-            if (filters.category_id) statsParams.category_id = filters.category_id;
-            if (filters.date_from) statsParams.start_date = filters.date_from;
-            if (filters.date_to) statsParams.end_date = filters.date_to;
+            if (currentFilters.category_id) statsParams.category_id = currentFilters.category_id;
+            if (currentFilters.date_from) statsParams.start_date = currentFilters.date_from;
+            if (currentFilters.date_to) statsParams.end_date = currentFilters.date_to;
             
             const statsResponse = await getTransactionsSummaryStatsApi(token, statsParams);
             setStats(statsResponse);
@@ -110,159 +110,12 @@ const TransactionsPage: React.FC = () => {
             console.error('Error loading stats:', error);
             // İstatistik hatası kritik değil, sadece log'la
         }
-    };
+    }, []); // Boş dependency array - sadece mount'ta oluşturulsun
 
-    // Load data on component mount
-    useEffect(() => {
-        if (isLoggedIn) {
-            const loadData = async () => {
-                try {
-                    const token = localStorage.getItem('token');
-                    if (!token) {
-                        setError('Token bulunamadı');
-                        return;
-                    }
-                    
-                    setLoading(true);
-                    setError(null);
-                    
-                    // API çağrısına filtreleri ekle
-                    const apiParams: Record<string, string | number> = { 
-                        page: pagination.page, 
-                        limit: pagination.limit 
-                    };
-                    
-                    // Filtreleri API parametrelerine ekle
-                    if (filters.category_id) apiParams.category_id = filters.category_id;
-                    if (filters.date_from) apiParams.start_date = filters.date_from;
-                    if (filters.date_to) apiParams.end_date = filters.date_to;
-                    
-                    // Load all data in parallel
-                    const [transactionsResponse, , categoriesResponse] = await Promise.all([
-                        getTransactionsApi(token, apiParams),
-                        getVehiclesApi(token),
-                        getTransactionCategoriesApi(token)
-                    ]);
-                    
-
-                    
-                    setTransactions(transactionsResponse.transactions || []);
-                    setCategories(categoriesResponse.data || []);
-                    
-                    // Update pagination info
-                    if (transactionsResponse.pagination) {
-                        setPagination(prev => ({
-                            ...prev,
-                            total: transactionsResponse.pagination.total,
-                            totalPages: transactionsResponse.pagination.totalPages
-                        }));
-                    }
-                    
-                    // İstatistikleri yükle
-                    await loadStats(token);
-                    
-                } catch (error: unknown) {
-                    console.error('Error loading data:', error);
-                    let errorMessage = 'Veriler yüklenirken hata oluştu';
-                    if (error && typeof error === 'object' && 'message' in error) {
-                        errorMessage += `: ${(error as { message?: string }).message}`;
-                    }
-                    setError(errorMessage);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            loadData();
-        }
-    }, [isLoggedIn, filters.category_id, filters.date_from, filters.date_to, loadStats, pagination.limit, pagination.page]);
-
-    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFilters({
-            ...filters,
-            [e.target.name]: e.target.value
-        });
-    };
-
-    // Filtreler değiştiğinde sayfa 1'e dön ve yeni verileri yükle
-    useEffect(() => {
-        if (isLoggedIn) {
-            const loadFilteredData = async () => {
-                try {
-                    const token = localStorage.getItem('token');
-                    if (!token) {
-                        setError('Token bulunamadı');
-                        return;
-                    }
-                    
-                    setLoading(true);
-                    setError(null);
-                    
-                    // Reset to page 1 when filters change
-                    setPagination(prev => ({ ...prev, page: 1 }));
-                    
-                    // API çağrısına filtreleri ekle
-                    const apiParams: Record<string, string | number> = { 
-                        page: 1, 
-                        limit: pagination.limit 
-                    };
-                    
-                    // Filtreleri API parametrelerine ekle
-                    if (filters.category_id) apiParams.category_id = filters.category_id;
-                    if (filters.date_from) apiParams.start_date = filters.date_from;
-                    if (filters.date_to) apiParams.end_date = filters.date_to;
-                    
-                    const transactionsResponse = await getTransactionsApi(token, apiParams);
-                    
-
-                    
-                    setTransactions(transactionsResponse.transactions || []);
-                    
-                    if (transactionsResponse.pagination) {
-                        setPagination(prev => ({
-                            ...prev,
-                            page: 1,
-                            total: transactionsResponse.pagination.total,
-                            totalPages: transactionsResponse.pagination.totalPages
-                        }));
-                    }
-                    
-                    // İstatistikleri güncelle
-                    await loadStats(token);
-                    
-                } catch (error: unknown) {
-                    console.error('Error loading filtered data:', error);
-                    let errorMessage = 'Filtrelenmiş veriler yüklenirken hata oluştu';
-                    if (error && typeof error === 'object' && 'message' in error) {
-                        errorMessage += `: ${(error as { message?: string }).message}`;
-                    }
-                    setError(errorMessage);
-                } finally {
-                    setLoading(false);
-                }
-            };
-            
-            // Debounce filter changes
-            const timeoutId = setTimeout(loadFilteredData, 500);
-            return () => clearTimeout(timeoutId);
-        }
-    }, [filters, isLoggedIn, pagination.limit, loadStats]);
-
-    const clearFilters = () => {
-        setFilters({
-            vehicle_plate: '',
-            category_id: '',
-            status: '',
-            date_from: '',
-            date_to: '',
-            min_amount: '',
-            max_amount: ''
-        });
-        // Reset pagination to page 1 when clearing filters
-        setPagination(prev => ({ ...prev, page: 1 }));
-    };
-
-    // Sayfa değiştirme fonksiyonu
-    const handlePageChange = async (newPage: number) => {
+    // Ana veri yükleme fonksiyonu
+    const loadData = useCallback(async (page: number = 1, currentFilters: typeof filters) => {
+        if (!isLoggedIn) return;
+        
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -275,28 +128,41 @@ const TransactionsPage: React.FC = () => {
             
             // API çağrısına filtreleri ekle
             const apiParams: Record<string, string | number> = { 
-                page: newPage, 
+                page: page, 
                 limit: pagination.limit 
             };
             
             // Filtreleri API parametrelerine ekle
-            if (filters.category_id) apiParams.category_id = filters.category_id;
-            if (filters.date_from) apiParams.start_date = filters.date_from;
-            if (filters.date_to) apiParams.end_date = filters.date_to;
+            if (currentFilters.category_id) apiParams.category_id = currentFilters.category_id;
+            if (currentFilters.date_from) apiParams.start_date = currentFilters.date_from;
+            if (currentFilters.date_to) apiParams.end_date = currentFilters.date_to;
             
-            const transactionsResponse = await getTransactionsApi(token, apiParams);
+            // Load all data in parallel
+            const [transactionsResponse, , categoriesResponse] = await Promise.all([
+                getTransactionsApi(token, apiParams),
+                getVehiclesApi(token),
+                getTransactionCategoriesApi(token)
+            ]);
             
             setTransactions(transactionsResponse.transactions || []);
-            setPagination(prev => ({
-                ...prev,
-                page: newPage,
-                total: transactionsResponse.pagination?.total || prev.total,
-                totalPages: transactionsResponse.pagination?.totalPages || prev.totalPages
-            }));
+            setCategories(categoriesResponse.data || []);
+            
+            // Update pagination info
+            if (transactionsResponse.pagination) {
+                setPagination(prev => ({
+                    ...prev,
+                    page: page,
+                    total: transactionsResponse.pagination.total,
+                    totalPages: transactionsResponse.pagination.totalPages
+                }));
+            }
+            
+            // İstatistikleri yükle
+            await loadStats(token, currentFilters);
             
         } catch (error: unknown) {
-            console.error('Error loading page:', error);
-            let errorMessage = 'Sayfa yüklenirken hata oluştu';
+            console.error('Error loading data:', error);
+            let errorMessage = 'Veriler yüklenirken hata oluştu';
             if (error && typeof error === 'object' && 'message' in error) {
                 errorMessage += `: ${(error as { message?: string }).message}`;
             }
@@ -304,41 +170,85 @@ const TransactionsPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    }, [isLoggedIn, pagination.limit, loadStats]);
+
+    // İlk yükleme
+    useEffect(() => {
+        loadData(1, filters);
+    }, [isLoggedIn]); // Sadece login durumu değiştiğinde
+
+    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const newFilters = {
+            ...filters,
+            [e.target.name]: e.target.value
+        };
+        setFilters(newFilters);
     };
+
+    // Filtreler değiştiğinde debounced yükleme
+    useEffect(() => {
+        if (!isLoggedIn) return;
+        
+        const timeoutId = setTimeout(() => {
+            loadData(1, filters);
+        }, 500);
+        
+        return () => clearTimeout(timeoutId);
+    }, [filters.category_id, filters.date_from, filters.date_to, loadData]); // Sadece backend filtrelerini izle
+
+    const clearFilters = () => {
+        const clearedFilters = {
+            vehicle_plate: '',
+            category_id: '',
+            status: '',
+            date_from: '',
+            date_to: '',
+            min_amount: '',
+            max_amount: ''
+        };
+        setFilters(clearedFilters);
+    };
+
+    // Sayfa değiştirme fonksiyonu
+    const handlePageChange = useCallback(async (newPage: number) => {
+        await loadData(newPage, filters);
+    }, [loadData, filters]);
 
     // Backend zaten filtreleme yaptığı için client-side filtreleme yapmıyoruz
     // Sadece backend'de olmayan filtreler için client-side filtreleme yapıyoruz
-    const filteredTransactions = transactions.filter(transaction => {
-        // Vehicle plate filter (backend'de olmayan filtre)
-        if (filters.vehicle_plate && transaction.vehicle_plate) {
-            if (!transaction.vehicle_plate.toLowerCase().includes(filters.vehicle_plate.toLowerCase())) {
+    const filteredTransactions = React.useMemo(() => {
+        return transactions.filter(transaction => {
+            // Vehicle plate filter (backend'de olmayan filtre)
+            if (filters.vehicle_plate && transaction.vehicle_plate) {
+                if (!transaction.vehicle_plate.toLowerCase().includes(filters.vehicle_plate.toLowerCase())) {
+                    return false;
+                }
+            }
+            
+            // Status filter (backend'de olmayan filtre)
+            if (filters.status && transaction.status !== filters.status) {
                 return false;
             }
-        }
-        
-        // Status filter (backend'de olmayan filtre)
-        if (filters.status && transaction.status !== filters.status) {
-            return false;
-        }
-        
-        // Amount range filter (backend'de olmayan filtre)
-        if (filters.min_amount && parseFloat(transaction.amount) < parseFloat(filters.min_amount)) {
-            return false;
-        }
+            
+            // Amount range filter (backend'de olmayan filtre)
+            if (filters.min_amount && parseFloat(transaction.amount) < parseFloat(filters.min_amount)) {
+                return false;
+            }
 
-        if (filters.max_amount && parseFloat(transaction.amount) > parseFloat(filters.max_amount)) {
-            return false;
-        }
-        
-        return true;
-    });
+            if (filters.max_amount && parseFloat(transaction.amount) > parseFloat(filters.max_amount)) {
+                return false;
+            }
+            
+            return true;
+        });
+    }, [transactions, filters.vehicle_plate, filters.status, filters.min_amount, filters.max_amount]);
 
     // Backend'den gelen istatistikleri kullan
     const totalAmount = stats.total_amount;
     const averageAmount = stats.average_amount;
 
-    // Get status color and text
-    const getStatusInfo = (status: string | undefined) => {
+    // Get status color and text - optimize with useCallback
+    const getStatusInfo = useCallback((status: string | undefined) => {
         switch (status) {
             case 'pending':
                 return {
@@ -366,7 +276,7 @@ const TransactionsPage: React.FC = () => {
                     color: theme === 'dark' ? 'bg-gray-900 text-gray-200' : 'bg-gray-100 text-gray-800'
                 };
         }
-    };
+    }, [theme]);
 
     // Giriş yapmamış kullanıcılar için loading göster
     if (!isLoggedIn) {
