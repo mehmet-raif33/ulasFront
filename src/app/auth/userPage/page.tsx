@@ -56,11 +56,11 @@ const UserPageContent: React.FC = () => {
             setUserData(prev => ({
                 ...prev,
                 id: user.id.toString(),
-                name: user.full_name || user.username || 'Kullanıcı',
+                name: user.name || 'Kullanıcı',
                 email: user.email || '',
                 role: user.role === 'admin' ? 'Yönetici' : 'Personel',
                 department: 'Genel',
-                phone: user.phone || '',
+                phone: '',
                 status: 'active',
                 lastLogin: new Date().toLocaleString('tr-TR'),
                 joinDate: new Date().toLocaleDateString('tr-TR'),
