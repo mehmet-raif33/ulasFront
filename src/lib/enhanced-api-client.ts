@@ -146,8 +146,11 @@ class EnhancedApiClient {
       if (response.status === 401) {
         console.log('🚨 401 Unauthorized - Token may be expired');
         
+        // Don't try to refresh token if this is a login request
+        const isLoginRequest = config.url.includes('/auth/login');
+        
         // If this was an authenticated request, try to refresh token and retry
-        if (config.requiresAuth !== false && tokenManager.isAuthenticated()) {
+        if (!isLoginRequest && config.requiresAuth !== false && tokenManager.isAuthenticated()) {
           console.log('🔄 Attempting token refresh and request retry...');
           try {
             // Token manager will handle the refresh automatically
@@ -169,6 +172,8 @@ class EnhancedApiClient {
             console.error('❌ Token refresh failed:', refreshError);
             // Let the error interceptor handle logout
           }
+        } else if (isLoginRequest) {
+          console.log('🚨 Login request failed - invalid credentials');
         }
       }
 
@@ -186,8 +191,15 @@ class EnhancedApiClient {
 
       // Handle authentication errors
       if (error.statusCode === 401) {
-        console.log('🚨 Authentication failed - redirecting to login');
-        await tokenManager.logout();
+        // Don't logout if this is a login request (wrong credentials)
+        const isLoginRequest = config.url.includes('/auth/login');
+        
+        if (!isLoginRequest) {
+          console.log('🚨 Authentication failed - redirecting to login');
+          await tokenManager.logout();
+        } else {
+          console.log('🚨 Login failed - invalid credentials (not logging out)');
+        }
       }
 
       // Handle network errors

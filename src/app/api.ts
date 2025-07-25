@@ -151,7 +151,7 @@ export async function changePasswordApi(token: string, { oldPassword, newPasswor
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ oldPassword, newPassword }),
+    body: JSON.stringify({ currentPassword: oldPassword, newPassword }),
   });
   if (!res.ok) {
     const error = await res.json();
