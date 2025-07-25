@@ -5,16 +5,18 @@ import { RootState } from '../../redux/store';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import LoginForm from "../LoginForm";
-import { selectIsLoggedIn } from "../../redux/sliceses/authSlices";
-import { getActivitiesApi } from '../../api';
+import { selectIsLoggedIn, selectUser } from "../../redux/sliceses/authSlices";
+import { getPersonnelActivitiesApi } from '../../api';
 
 const UserPageContent: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
+    const user = useSelector(selectUser);
     const [activeTab, setActiveTab] = useState('profile');
     const searchParams = useSearchParams();
     const [activities, setActivities] = useState<any[]>([]);
     const [loadingActivities, setLoadingActivities] = useState(false);
     const [userData, setUserData] = useState({
+        id: '',
         name: 'Ahmet Yılmaz',
         email: 'ahmet@ulas.com',
         role: 'Sürücü',
@@ -39,6 +41,7 @@ const UserPageContent: React.FC = () => {
         if (id && name && email && role && department && phone && status) {
             setUserData(prev => ({
                 ...prev,
+                id: id,
                 name: decodeURIComponent(name),
                 email: decodeURIComponent(email),
                 role: decodeURIComponent(role),
@@ -48,23 +51,37 @@ const UserPageContent: React.FC = () => {
                 lastLogin: new Date().toLocaleString('tr-TR'),
                 joinDate: new Date().toLocaleDateString('tr-TR'),
             }));
+        } else if (user) {
+            // Redux'tan kullanıcı bilgilerini al
+            setUserData(prev => ({
+                ...prev,
+                id: user.id.toString(),
+                name: user.full_name || user.username || 'Kullanıcı',
+                email: user.email || '',
+                role: user.role === 'admin' ? 'Yönetici' : 'Personel',
+                department: 'Genel',
+                phone: user.phone || '',
+                status: 'active',
+                lastLogin: new Date().toLocaleString('tr-TR'),
+                joinDate: new Date().toLocaleDateString('tr-TR'),
+            }));
         }
-    }, [searchParams]);
+    }, [searchParams, user]);
 
-    // Aktiviteleri yükle
+    // Aktiviteleri yükle - sadece o personelin aktiviteleri
     useEffect(() => {
         const loadActivities = async () => {
-            if (activeTab === 'activity') {
+            if (activeTab === 'activity' && userData.id) {
                 try {
                     setLoadingActivities(true);
                     const token = localStorage.getItem('token');
                     if (token) {
-                        const response = await getActivitiesApi(token);
-                        console.log('Activities response:', response);
+                        const response = await getPersonnelActivitiesApi(token, userData.id);
+                        console.log('Personnel activities response:', response);
                         setActivities(response || []);
                     }
                 } catch (error) {
-                    console.error('Error loading activities:', error);
+                    console.error('Error loading personnel activities:', error);
                     setActivities([]);
                 } finally {
                     setLoadingActivities(false);
@@ -73,7 +90,7 @@ const UserPageContent: React.FC = () => {
         };
 
         loadActivities();
-    }, [activeTab]);
+    }, [activeTab, userData.id]);
 
     const getActivityIcon = (action: string) => {
         if (action.includes('giriş') || action.includes('login')) return '🔐';
@@ -112,16 +129,20 @@ const UserPageContent: React.FC = () => {
     };
 
     return (
-        <div className={`min-h-screen bg-gradient-to-br p-4 sm:p-6 ${theme === 'dark' ? 'from-slate-900 to-blue-950' : 'from-slate-50 to-blue-50'}`}>
+        <div className={`min-h-screen w-full bg-gradient-to-br p-2 sm:p-4 lg:p-6 ${theme === 'dark' ? 'from-slate-900 to-blue-950' : 'from-slate-50 to-blue-50'}`}>
             {/* Header */}
-            <div className="mb-6 sm:mb-8">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2 sm:space-x-4">
-                        <Link href="/" className={`transition-colors text-sm sm:text-base ${theme === 'dark' ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-700'}`}>← Ana Sayfaya Dön</Link>
-                        <h1 className={`text-xl sm:text-2xl lg:text-3xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Kullanıcı Paneli</h1>
+            <div className="mb-4 sm:mb-6 lg:mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        <Link href="/" className={`text-xs sm:text-sm lg:text-base transition-colors ${theme === 'dark' ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-700'}`}>
+                            ← Ana Sayfaya Dön
+                        </Link>
+                        <h1 className={`text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                            Kullanıcı Paneli
+                        </h1>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${theme === 'dark' ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                    <div className="flex items-center">
+                        <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${theme === 'dark' ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
                             Kullanıcı
                         </span>
                     </div>
@@ -129,8 +150,8 @@ const UserPageContent: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="mb-6">
-                <div className={`flex flex-wrap sm:flex-nowrap gap-1 backdrop-blur-sm rounded-lg sm:rounded-xl p-1 shadow-lg ${theme === 'dark' ? 'bg-slate-800/80' : 'bg-white/80'}`}>
+            <div className="mb-4 sm:mb-6">
+                <div className={`flex w-full backdrop-blur-sm rounded-lg sm:rounded-xl p-1 shadow-lg ${theme === 'dark' ? 'bg-slate-800/80' : 'bg-white/80'}`}>
                     {[
                         { id: 'profile', name: 'Profil', icon: '👤' },
                         { id: 'activity', name: 'Aktivite', icon: '📊' }
@@ -147,68 +168,63 @@ const UserPageContent: React.FC = () => {
                             }`}
                         >
                             <span className="text-sm sm:text-base">{tab.icon}</span>
-                            <span className="hidden sm:inline">{tab.name}</span>
+                            <span className="text-xs sm:text-sm">{tab.name}</span>
                         </button>
                     ))}
                 </div>
             </div>
 
             {/* Tab Content */}
-            <div className="space-y-6">
+            <div className="w-full">
                 {activeTab === 'profile' && (
-                    <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-white/20'} backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-xl border p-4 sm:p-6`}>
-                        <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Profil Bilgileri</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                            <div className="space-y-4">
-                                <div className={`flex items-center gap-3 p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
-                                    <span className="text-2xl">👤</span>
-                                    <div>
-                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Ad Soyad</p>
-                                        <p className={`font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.name}</p>
+                    <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-white/20'} backdrop-blur-sm rounded-xl shadow-xl border p-3 sm:p-4 lg:p-6`}>
+                        <h3 className={`text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 lg:mb-6 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                            Profil Bilgileri
+                        </h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+                            <div className="space-y-3 sm:space-y-4">
+                                <div className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                    <span className="text-lg sm:text-xl lg:text-2xl">👤</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Ad Soyad</p>
+                                        <p className={`font-semibold text-sm sm:text-base truncate ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.name}</p>
                                     </div>
                                 </div>
-                                <div className={`flex items-center gap-3 p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
-                                    <span className="text-2xl">📧</span>
-                                    <div>
-                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>E-posta</p>
-                                        <p className={`font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.email}</p>
+                                <div className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                    <span className="text-lg sm:text-xl lg:text-2xl">📧</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>E-posta</p>
+                                        <p className={`font-semibold text-sm sm:text-base truncate ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.email}</p>
                                     </div>
                                 </div>
-                                <div className={`flex items-center gap-3 p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
-                                    <span className="text-2xl">📱</span>
-                                    <div>
-                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Telefon</p>
-                                        <p className={`font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.phone}</p>
+                                <div className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                    <span className="text-lg sm:text-xl lg:text-2xl">📱</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Telefon</p>
+                                        <p className={`font-semibold text-sm sm:text-base truncate ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.phone || 'Belirtilmemiş'}</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="space-y-4">
-                                <div className={`flex items-center gap-3 p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
-                                    <span className="text-2xl">🏢</span>
-                                    <div>
-                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Departman</p>
-                                        <p className={`font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.department}</p>
+                            <div className="space-y-3 sm:space-y-4">
+                                <div className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                    <span className="text-lg sm:text-xl lg:text-2xl">🏢</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Departman</p>
+                                        <p className={`font-semibold text-sm sm:text-base truncate ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.department}</p>
                                     </div>
                                 </div>
-                                <div className={`flex items-center gap-3 p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
-                                    <span className="text-2xl">🎯</span>
-                                    <div>
-                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Rol</p>
-                                        <p className={`font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.role}</p>
+                                <div className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                    <span className="text-lg sm:text-xl lg:text-2xl">🎯</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Rol</p>
+                                        <p className={`font-semibold text-sm sm:text-base truncate ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.role}</p>
                                     </div>
                                 </div>
-                                <div className={`flex items-center gap-3 p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
-                                    <span className="text-2xl">🚗</span>
-                                    <div>
-                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Atanan Araç</p>
-                                        <p className={`font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>{userData.vehicleAssigned}</p>
-                                    </div>
-                                </div>
-                                <div className={`flex items-center gap-3 p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
-                                    <span className="text-2xl">📊</span>
-                                    <div>
-                                        <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Durum</p>
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                <div className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg ${theme === 'dark' ? 'bg-slate-700' : 'bg-gray-50'}`}>
+                                    <span className="text-lg sm:text-xl lg:text-2xl">📊</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Durum</p>
+                                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
                                             userData.status === 'active' 
                                                 ? (theme === 'dark' ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800')
                                                 : (theme === 'dark' ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800')
@@ -223,56 +239,55 @@ const UserPageContent: React.FC = () => {
                 )}
 
                 {activeTab === 'activity' && (
-                    <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-white/20'} backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-xl border p-4 sm:p-6`}>
-                        <h3 className={`text-lg sm:text-xl font-bold mb-4 sm:mb-6 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>Son Aktiviteler</h3>
+                    <div className={`${theme === 'dark' ? 'bg-slate-800/80 border-slate-700' : 'bg-white/80 border-white/20'} backdrop-blur-sm rounded-xl shadow-xl border p-3 sm:p-4 lg:p-6`}>
+                        <h3 className={`text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 lg:mb-6 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                            Son Aktivitelerim
+                        </h3>
                         
                         {loadingActivities ? (
-                            <div className="flex items-center justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                                <span className={`ml-3 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>Aktiviteler yükleniyor...</span>
+                            <div className="flex items-center justify-center py-6 sm:py-8">
+                                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600"></div>
+                                <span className={`ml-2 sm:ml-3 text-sm sm:text-base ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                                    Aktiviteler yükleniyor...
+                                </span>
                             </div>
                         ) : activities.length > 0 ? (
-                            <div className="space-y-3 sm:space-y-4">
+                            <div className="space-y-2 sm:space-y-3 lg:space-y-4">
                                 {activities.map((activity, index) => (
-                                    <div key={activity.id || index} className={`border rounded-lg sm:rounded-xl p-3 sm:p-4 transition-colors ${theme === 'dark' ? 'border-slate-600 hover:bg-slate-700' : 'border-gray-200 hover:bg-gray-50'}`}>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xl sm:text-2xl">
+                                    <div key={activity.id || index} className={`border rounded-lg p-2 sm:p-3 lg:p-4 transition-colors ${theme === 'dark' ? 'border-slate-600 hover:bg-slate-700' : 'border-gray-200 hover:bg-gray-50'}`}>
+                                        <div className="flex items-start gap-2 sm:gap-3">
+                                            <span className="text-base sm:text-lg lg:text-xl flex-shrink-0 mt-0.5">
                                                 {getActivityIcon(activity.action || '')}
                                             </span>
-                                            <div className="flex-1">
-                                                <p className={`font-semibold text-sm sm:text-base ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={`font-semibold text-sm sm:text-base mb-1 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
                                                     {activity.action || 'Bilinmeyen aktivite'}
                                                 </p>
-                                                <div className="flex items-center gap-2 mt-1">
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                                                     <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                                                         {formatActivityTime(activity.created_at)}
                                                     </p>
                                                     {activity.user_name && (
                                                         <>
-                                                            <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>•</span>
+                                                            <span className={`hidden sm:inline text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>•</span>
                                                             <p className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                                                                 {activity.user_name}
                                                             </p>
                                                         </>
                                                     )}
                                                 </div>
-                                                {activity.meta && (
-                                                    <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-600'}`}>
-                                                        {typeof activity.meta === 'string' ? activity.meta : JSON.stringify(activity.meta)}
-                                                    </p>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-8">
-                                <div className="text-4xl mb-4">📊</div>
-                                <h4 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
+                            <div className="text-center py-6 sm:py-8 lg:py-12">
+                                <div className="text-3xl sm:text-4xl lg:text-5xl mb-3 sm:mb-4">📊</div>
+                                <h4 className={`text-base sm:text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'}`}>
                                     Henüz Aktivite Yok
                                 </h4>
-                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                <p className={`text-xs sm:text-sm px-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                                     Sistem kullanımınız başladığında aktiviteleriniz burada görüntülenecek.
                                 </p>
                             </div>

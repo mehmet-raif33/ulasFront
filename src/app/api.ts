@@ -626,6 +626,18 @@ export async function getActivitiesApi(token: string) {
   return data.data || data; // Backend'den gelen veriyi düzgün şekilde al
 }
 
+export async function getPersonnelActivitiesApi(token: string, personnelId: string) {
+  const res = await fetch(`${API_BASE_URL}/activities/personnel/${personnelId}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Personel etkinlikleri alınamadı');
+  }
+  const data = await res.json();
+  return data.data || data; // Backend'den gelen veriyi düzgün şekilde al
+}
+
 export async function getTotalRevenueApi(token: string) {
   const res = await fetch(`${API_BASE_URL}/activities/total-revenue`, {
     headers: { 'Authorization': `Bearer ${token}` },
