@@ -47,11 +47,11 @@ const LoginForm: React.FC = () => {
       // Enhanced API client ile login yap
       const response = await authApi.login({ username, password });
       
-      if (!response || !response.data || !response.data.user || !response.data.token) {
+      if (!response || !response.user || !response.token) {
         throw new Error('Login response data is missing');
       }
       
-      const { user, token, refreshToken } = response.data;
+      const { user, token, refreshToken } = response;
       
       // Kullanıcı bilgisini normalize et
       const userData = {
