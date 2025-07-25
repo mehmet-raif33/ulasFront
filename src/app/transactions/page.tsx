@@ -4,8 +4,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
 import { selectIsLoggedIn } from '../redux/sliceses/authSlices';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { getTransactionsApi, getVehiclesApi, getTransactionCategoriesApi } from '../api';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { getTransactionsApi, getVehiclesApi, getTransactionCategoriesApi, getTransactionsSummaryStatsApi } from '../api';
 
 // Transaction interface matching backend schema
 interface Transaction {
@@ -42,10 +42,28 @@ const TransactionsPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
     const isLoggedIn = useSelector(selectIsLoggedIn);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [categories, setCategories] = useState<TransactionCategory[]>([]);
+    
+    // Stats states
+    const [stats, setStats] = useState({
+        total_transactions: 0,
+        total_amount: 0,
+        average_amount: 0,
+        min_amount: 0,
+        max_amount: 0
+    });
+    
+    // Pagination states
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 50, // Daha fazla işlem göster
+        total: 0,
+        totalPages: 0
+    });
     
     // Filter states
     const [filters, setFilters] = useState({
@@ -65,6 +83,35 @@ const TransactionsPage: React.FC = () => {
         }
     }, [isLoggedIn, router]);
 
+    // URL parametrelerinden kategori ID'sini al ve filtreyi ayarla
+    useEffect(() => {
+        const categoryId = searchParams.get('category_id');
+        if (categoryId) {
+            setFilters(prev => ({
+                ...prev,
+                category_id: categoryId
+            }));
+        }
+    }, [searchParams]);
+
+    // İstatistikleri yükle
+    const loadStats = async (token: string) => {
+        try {
+            const statsParams: any = {};
+            
+            // Filtreleri istatistik parametrelerine ekle
+            if (filters.category_id) statsParams.category_id = filters.category_id;
+            if (filters.date_from) statsParams.start_date = filters.date_from;
+            if (filters.date_to) statsParams.end_date = filters.date_to;
+            
+            const statsResponse = await getTransactionsSummaryStatsApi(token, statsParams);
+            setStats(statsResponse);
+        } catch (error: unknown) {
+            console.error('Error loading stats:', error);
+            // İstatistik hatası kritik değil, sadece log'la
+        }
+    };
+
     // Load data on component mount
     useEffect(() => {
         if (isLoggedIn) {
@@ -79,15 +126,40 @@ const TransactionsPage: React.FC = () => {
                     setLoading(true);
                     setError(null);
                     
+                    // API çağrısına filtreleri ekle
+                    const apiParams: any = { 
+                        page: pagination.page, 
+                        limit: pagination.limit 
+                    };
+                    
+                    // Filtreleri API parametrelerine ekle
+                    if (filters.category_id) apiParams.category_id = filters.category_id;
+                    if (filters.date_from) apiParams.start_date = filters.date_from;
+                    if (filters.date_to) apiParams.end_date = filters.date_to;
+                    
                     // Load all data in parallel
                     const [transactionsResponse, , categoriesResponse] = await Promise.all([
-                        getTransactionsApi(token),
+                        getTransactionsApi(token, apiParams),
                         getVehiclesApi(token),
                         getTransactionCategoriesApi(token)
                     ]);
                     
+
+                    
                     setTransactions(transactionsResponse.transactions || []);
                     setCategories(categoriesResponse.data || []);
+                    
+                    // Update pagination info
+                    if (transactionsResponse.pagination) {
+                        setPagination(prev => ({
+                            ...prev,
+                            total: transactionsResponse.pagination.total,
+                            totalPages: transactionsResponse.pagination.totalPages
+                        }));
+                    }
+                    
+                    // İstatistikleri yükle
+                    await loadStats(token);
                     
                 } catch (error: unknown) {
                     console.error('Error loading data:', error);
@@ -111,6 +183,70 @@ const TransactionsPage: React.FC = () => {
         });
     };
 
+    // Filtreler değiştiğinde sayfa 1'e dön ve yeni verileri yükle
+    useEffect(() => {
+        if (isLoggedIn) {
+            const loadFilteredData = async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        setError('Token bulunamadı');
+                        return;
+                    }
+                    
+                    setLoading(true);
+                    setError(null);
+                    
+                    // Reset to page 1 when filters change
+                    setPagination(prev => ({ ...prev, page: 1 }));
+                    
+                    // API çağrısına filtreleri ekle
+                    const apiParams: any = { 
+                        page: 1, 
+                        limit: pagination.limit 
+                    };
+                    
+                    // Filtreleri API parametrelerine ekle
+                    if (filters.category_id) apiParams.category_id = filters.category_id;
+                    if (filters.date_from) apiParams.start_date = filters.date_from;
+                    if (filters.date_to) apiParams.end_date = filters.date_to;
+                    
+                    const transactionsResponse = await getTransactionsApi(token, apiParams);
+                    
+
+                    
+                    setTransactions(transactionsResponse.transactions || []);
+                    
+                    if (transactionsResponse.pagination) {
+                        setPagination(prev => ({
+                            ...prev,
+                            page: 1,
+                            total: transactionsResponse.pagination.total,
+                            totalPages: transactionsResponse.pagination.totalPages
+                        }));
+                    }
+                    
+                    // İstatistikleri güncelle
+                    await loadStats(token);
+                    
+                } catch (error: unknown) {
+                    console.error('Error loading filtered data:', error);
+                    let errorMessage = 'Filtrelenmiş veriler yüklenirken hata oluştu';
+                    if (error && typeof error === 'object' && 'message' in error) {
+                        errorMessage += `: ${(error as { message?: string }).message}`;
+                    }
+                    setError(errorMessage);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            // Debounce filter changes
+            const timeoutId = setTimeout(loadFilteredData, 500);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [filters, isLoggedIn, pagination.limit]);
+
     const clearFilters = () => {
         setFilters({
             vehicle_plate: '',
@@ -121,46 +257,71 @@ const TransactionsPage: React.FC = () => {
             min_amount: '',
             max_amount: ''
         });
+        // Reset pagination to page 1 when clearing filters
+        setPagination(prev => ({ ...prev, page: 1 }));
     };
 
-    // Filter transactions based on current filters
+    // Sayfa değiştirme fonksiyonu
+    const handlePageChange = async (newPage: number) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setError('Token bulunamadı');
+                return;
+            }
+            
+            setLoading(true);
+            setError(null);
+            
+            // API çağrısına filtreleri ekle
+            const apiParams: any = { 
+                page: newPage, 
+                limit: pagination.limit 
+            };
+            
+            // Filtreleri API parametrelerine ekle
+            if (filters.category_id) apiParams.category_id = filters.category_id;
+            if (filters.date_from) apiParams.start_date = filters.date_from;
+            if (filters.date_to) apiParams.end_date = filters.date_to;
+            
+            const transactionsResponse = await getTransactionsApi(token, apiParams);
+            
+            setTransactions(transactionsResponse.transactions || []);
+            setPagination(prev => ({
+                ...prev,
+                page: newPage,
+                total: transactionsResponse.pagination?.total || prev.total,
+                totalPages: transactionsResponse.pagination?.totalPages || prev.totalPages
+            }));
+            
+        } catch (error: unknown) {
+            console.error('Error loading page:', error);
+            let errorMessage = 'Sayfa yüklenirken hata oluştu';
+            if (error && typeof error === 'object' && 'message' in error) {
+                errorMessage += `: ${(error as { message?: string }).message}`;
+            }
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Backend zaten filtreleme yaptığı için client-side filtreleme yapmıyoruz
+    // Sadece backend'de olmayan filtreler için client-side filtreleme yapıyoruz
     const filteredTransactions = transactions.filter(transaction => {
-        // Vehicle plate filter
+        // Vehicle plate filter (backend'de olmayan filtre)
         if (filters.vehicle_plate && transaction.vehicle_plate) {
             if (!transaction.vehicle_plate.toLowerCase().includes(filters.vehicle_plate.toLowerCase())) {
                 return false;
             }
         }
-
-        // Category filter
-        if (filters.category_id && transaction.category_id !== filters.category_id) {
-            return false;
-        }
-
-        // Status filter
+        
+        // Status filter (backend'de olmayan filtre)
         if (filters.status && transaction.status !== filters.status) {
             return false;
         }
-
-        // Date range filter
-        if (filters.date_from) {
-            const transactionDate = new Date(transaction.transaction_date);
-            const fromDate = new Date(filters.date_from);
-            if (transactionDate < fromDate) {
-                return false;
-            }
-        }
-
-        if (filters.date_to) {
-            const transactionDate = new Date(transaction.transaction_date);
-            const toDate = new Date(filters.date_to);
-            toDate.setHours(23, 59, 59); // End of day
-            if (transactionDate > toDate) {
-                return false;
-            }
-        }
-
-        // Amount range filter
+        
+        // Amount range filter (backend'de olmayan filtre)
         if (filters.min_amount && parseFloat(transaction.amount) < parseFloat(filters.min_amount)) {
             return false;
         }
@@ -168,13 +329,13 @@ const TransactionsPage: React.FC = () => {
         if (filters.max_amount && parseFloat(transaction.amount) > parseFloat(filters.max_amount)) {
             return false;
         }
-
+        
         return true;
     });
 
-    // Calculate totals for filtered transactions
-    const totalAmount = filteredTransactions.reduce((sum, transaction) => sum + parseFloat(transaction.amount), 0);
-    const averageAmount = filteredTransactions.length > 0 ? totalAmount / filteredTransactions.length : 0;
+    // Backend'den gelen istatistikleri kullan
+    const totalAmount = stats.total_amount;
+    const averageAmount = stats.average_amount;
 
     // Get status color and text
     const getStatusInfo = (status: string | undefined) => {
@@ -293,9 +454,9 @@ const TransactionsPage: React.FC = () => {
                                 <p className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                                     Toplam İşlem
                                 </p>
-                                <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                                    {filteredTransactions.length}
-                                </p>
+                                                                 <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                                     {stats.total_transactions}
+                                 </p>
                             </div>
                             <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-blue-500 text-white">
                                 📊
@@ -759,6 +920,56 @@ const TransactionsPage: React.FC = () => {
                                 </motion.div>
                             ))}
                         </div>
+
+                        {/* Pagination Controls */}
+                        {pagination.totalPages > 1 && (
+                            <div className="flex justify-center items-center space-x-2 mt-6 mb-4">
+                                <button
+                                    onClick={() => handlePageChange(pagination.page - 1)}
+                                    disabled={pagination.page <= 1}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                                        pagination.page <= 1
+                                            ? theme === 'dark' 
+                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                            : theme === 'dark'
+                                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                    }`}
+                                >
+                                    Önceki
+                                </button>
+                                
+                                <span className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Sayfa {pagination.page} / {pagination.totalPages}
+                                </span>
+                                
+                                <button
+                                    onClick={() => handlePageChange(pagination.page + 1)}
+                                    disabled={pagination.page >= pagination.totalPages}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                                        pagination.page >= pagination.totalPages
+                                            ? theme === 'dark' 
+                                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                            : theme === 'dark'
+                                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                    }`}
+                                >
+                                    Sonraki
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Total Count */}
+                        {pagination.total > 0 && (
+                            <div className="text-center mb-4">
+                                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    Toplam {pagination.total} işlem bulundu
+                                </p>
+                            </div>
+                        )}
 
                         {/* Empty State */}
                         {filteredTransactions.length === 0 && !loading && (

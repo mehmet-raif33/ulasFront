@@ -12,10 +12,7 @@ import { useToast } from '../AppLayoutClient';
 interface Vehicle {
   id: string;
   plate: string;
-  brand: string;
-  model: string;
   year: number;
-  color: string;
   customer_email?: string;
   customer_phone?: string;
   created_at: string;
@@ -40,8 +37,11 @@ const AddTransactionPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-
     const [categories, setCategories] = useState<TransactionCategory[]>([]);
+    
+    // Vehicle search state
+    const [vehicleSearch, setVehicleSearch] = useState('');
+    const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
     
     // Form states
     const [isNewVehicle, setIsNewVehicle] = useState(false);
@@ -50,16 +50,15 @@ const AddTransactionPage: React.FC = () => {
         category_id: '',
         description: '',
         amount: '',
+        expense: '',
+        is_expense: true,
         transaction_date: new Date().toISOString().split('T')[0]
     });
     
     // New vehicle form data
     const [newVehicleData, setNewVehicleData] = useState({
         plate: '',
-        brand: '',
-        model: '',
         year: '',
-        color: '',
         customer_email: '',
         customer_phone: ''
     });
@@ -70,6 +69,18 @@ const AddTransactionPage: React.FC = () => {
             router.push('/landing');
         }
     }, [isLoggedIn, router]);
+
+    // Filter vehicles based on search
+    useEffect(() => {
+        if (vehicleSearch.trim() === '') {
+            setFilteredVehicles(vehicles);
+        } else {
+            const filtered = vehicles.filter(vehicle => 
+                vehicle.plate.toLowerCase().includes(vehicleSearch.toLowerCase())
+            );
+            setFilteredVehicles(filtered);
+        }
+    }, [vehicles, vehicleSearch]);
 
     // Load vehicles, personnel, and categories on component mount
     useEffect(() => {
@@ -125,12 +136,15 @@ const AddTransactionPage: React.FC = () => {
 
     const handleVehicleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const value = e.target.value;
+        
         if (value === 'new') {
             setIsNewVehicle(true);
-            setFormData({ ...formData, vehicle_id: '' });
+            setFormData(prev => ({ ...prev, vehicle_id: '' }));
         } else {
             setIsNewVehicle(false);
-            setFormData({ ...formData, vehicle_id: value });
+            setFormData(prev => ({ ...prev, vehicle_id: value }));
+            // Clear search when vehicle is selected
+            setVehicleSearch('');
         }
     };
 
@@ -164,16 +178,6 @@ const AddTransactionPage: React.FC = () => {
                     return;
                 }
                 
-                if (!newVehicleData.brand.trim()) {
-                    setError('Marka alanı zorunludur');
-                    return;
-                }
-                
-                if (!newVehicleData.model.trim()) {
-                    setError('Model alanı zorunludur');
-                    return;
-                }
-                
                 if (!newVehicleData.year || parseInt(newVehicleData.year) < 1900 || parseInt(newVehicleData.year) > new Date().getFullYear() + 1) {
                     setError('Geçerli bir yıl giriniz');
                     return;
@@ -181,10 +185,7 @@ const AddTransactionPage: React.FC = () => {
 
                 const vehicleData = {
                     plate: newVehicleData.plate.trim().toUpperCase(),
-                    brand: newVehicleData.brand.trim(),
-                    model: newVehicleData.model.trim(),
                     year: parseInt(newVehicleData.year),
-                    color: newVehicleData.color.trim(),
                     customer_email: newVehicleData.customer_email.trim(),
                     customer_phone: newVehicleData.customer_phone.trim()
                 };
@@ -217,6 +218,12 @@ const AddTransactionPage: React.FC = () => {
                 setError('Geçerli bir tutar giriniz');
                 return;
             }
+
+            // Gider validasyonu
+            if (formData.is_expense && (!formData.expense || parseFloat(formData.expense) <= 0)) {
+                setError('Geçerli bir gider tutarı giriniz');
+                return;
+            }
             
             if (!formData.transaction_date) {
                 setError('İşlem tarihi zorunludur');
@@ -227,6 +234,8 @@ const AddTransactionPage: React.FC = () => {
                 vehicle_id: vehicleId,
                 category_id: formData.category_id,
                 amount: parseFloat(formData.amount),
+                expense: formData.is_expense ? parseFloat(formData.expense) : undefined,
+                is_expense: formData.is_expense,
                 description: formData.description.trim(),
                 transaction_date: formData.transaction_date
             };
@@ -338,6 +347,27 @@ const AddTransactionPage: React.FC = () => {
                             <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                                 Araç Seçimi *
                             </label>
+                            
+                            {/* Vehicle Search Input */}
+                            <div className="mb-3">
+                                <input
+                                    type="text"
+                                    placeholder="Araç ara... (plaka)"
+                                    value={vehicleSearch}
+                                    onChange={(e) => setVehicleSearch(e.target.value)}
+                                    className={`w-full p-2.5 sm:p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
+                                        theme === 'dark' 
+                                            ? 'border-slate-600 bg-slate-700 text-white' 
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                />
+                                {vehicleSearch && (
+                                    <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        {filteredVehicles.length} araç bulundu
+                                    </p>
+                                )}
+                            </div>
+                            
                             <select
                                 value={isNewVehicle ? 'new' : formData.vehicle_id}
                                 onChange={handleVehicleTypeChange}
@@ -350,9 +380,9 @@ const AddTransactionPage: React.FC = () => {
                             >
                                 <option value="">Araç seçimi yapın</option>
                                 <option value="new">➕ Yeni Araç Ekle</option>
-                                {vehicles.map((vehicle) => (
+                                {filteredVehicles.map((vehicle) => (
                                     <option key={vehicle.id} value={vehicle.id}>
-                                        {vehicle.plate} - {vehicle.brand} {vehicle.model} ({vehicle.year})
+                                        {vehicle.plate} - {vehicle.year}
                                     </option>
                                 ))}
                             </select>
@@ -394,42 +424,6 @@ const AddTransactionPage: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className={`block text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            Marka *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="brand"
-                                            value={newVehicleData.brand}
-                                            onChange={handleNewVehicleInputChange}
-                                            className={`w-full p-2.5 sm:p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
-                                                theme === 'dark' 
-                                                    ? 'border-slate-600 bg-slate-700 text-white' 
-                                                    : 'border-gray-300 bg-white text-gray-900'
-                                            }`}
-                                            placeholder="Toyota"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={`block text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            Model *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="model"
-                                            value={newVehicleData.model}
-                                            onChange={handleNewVehicleInputChange}
-                                            className={`w-full p-2.5 sm:p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
-                                                theme === 'dark' 
-                                                    ? 'border-slate-600 bg-slate-700 text-white' 
-                                                    : 'border-gray-300 bg-white text-gray-900'
-                                            }`}
-                                            placeholder="Corolla"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className={`block text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                                             Yıl *
                                         </label>
                                         <input
@@ -437,32 +431,15 @@ const AddTransactionPage: React.FC = () => {
                                             name="year"
                                             value={newVehicleData.year}
                                             onChange={handleNewVehicleInputChange}
-                                            min="1900"
-                                            max={new Date().getFullYear() + 1}
                                             className={`w-full p-2.5 sm:p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
                                                 theme === 'dark' 
                                                     ? 'border-slate-600 bg-slate-700 text-white' 
                                                     : 'border-gray-300 bg-white text-gray-900'
                                             }`}
                                             placeholder="2020"
+                                            min="1900"
+                                            max={new Date().getFullYear() + 1}
                                             required
-                                        />
-                                    </div>
-                                    <div className="sm:col-span-2">
-                                        <label className={`block text-sm font-medium mb-1.5 sm:mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            Renk
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="color"
-                                            value={newVehicleData.color}
-                                            onChange={handleNewVehicleInputChange}
-                                            className={`w-full p-2.5 sm:p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
-                                                theme === 'dark' 
-                                                    ? 'border-slate-600 bg-slate-700 text-white' 
-                                                    : 'border-gray-300 bg-white text-gray-900'
-                                            }`}
-                                            placeholder="Beyaz"
                                         />
                                     </div>
                                     <div>
@@ -503,6 +480,37 @@ const AddTransactionPage: React.FC = () => {
                             </motion.div>
                         )}
 
+                        {/* Transaction Type Selection */}
+                        <div>
+                            <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                İşlem Tipi *
+                            </label>
+                            <div className="flex gap-3">
+                                <label className={`flex items-center cursor-pointer ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    <input
+                                        type="radio"
+                                        name="is_expense"
+                                        value="true"
+                                        checked={formData.is_expense === true}
+                                        onChange={(e) => setFormData({...formData, is_expense: e.target.value === 'true'})}
+                                        className="mr-2"
+                                    />
+                                    <span className="text-red-500 font-medium">💰 Gider</span>
+                                </label>
+                                <label className={`flex items-center cursor-pointer ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    <input
+                                        type="radio"
+                                        name="is_expense"
+                                        value="false"
+                                        checked={formData.is_expense === false}
+                                        onChange={(e) => setFormData({...formData, is_expense: e.target.value === 'true'})}
+                                        className="mr-2"
+                                    />
+                                    <span className="text-green-500 font-medium">💵 Gelir</span>
+                                </label>
+                            </div>
+                        </div>
+
                         {/* Category Selection */}
                         <div>
                             <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -533,7 +541,7 @@ const AddTransactionPage: React.FC = () => {
                             {/* Amount */}
                             <div>
                                 <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    Tutar (₺) *
+                                    {formData.is_expense ? 'Gelir (₺)' : 'Tutar (₺)'} *
                                 </label>
                                 <input
                                     type="number"
@@ -571,6 +579,30 @@ const AddTransactionPage: React.FC = () => {
                                 />
                             </div>
                         </div>
+
+                        {/* Expense (only for expense transactions) */}
+                        {formData.is_expense && (
+                            <div>
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Gider (₺) *
+                                </label>
+                                <input
+                                    type="number"
+                                    name="expense"
+                                    value={formData.expense}
+                                    onChange={handleInputChange}
+                                    step="0.01"
+                                    min="0"
+                                    className={`w-full p-2.5 sm:p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${
+                                        theme === 'dark'
+                                            ? 'border-slate-600 bg-slate-700 text-white'
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                    placeholder="0.00"
+                                    required
+                                />
+                            </div>
+                        )}
 
                         {/* Description */}
                         <div>

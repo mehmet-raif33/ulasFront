@@ -661,12 +661,35 @@ const RevenuePage: React.FC = () => {
       >
         {/* Header */}
         <div className="mb-8">
-          <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            Ciro Hesaplama
-          </h1>
-          <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
-            İşlem bazlı ciro analizi ve raporlama
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className={`text-3xl font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                Ciro Hesaplama
+              </h1>
+              <p className={theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
+                İşlem bazlı ciro analizi ve raporlama
+              </p>
+            </div>
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 150 }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => router.push('/profit')}
+              className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white'
+                  : 'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-white'
+              } shadow-lg hover:shadow-emerald-500/20`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg group-hover:scale-110 transition-transform duration-200">📊</span>
+                <span>Kar Analizi</span>
+                <span className="text-sm group-hover:translate-x-1 transition-transform duration-200">→</span>
+              </div>
+            </motion.button>
+          </div>
         </div>
 
         {/* Error Message */}

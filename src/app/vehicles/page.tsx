@@ -13,10 +13,7 @@ import { useToast } from '../AppLayoutClient';
 interface Vehicle {
   id: string;
   plate: string;
-  brand: string;
-  model: string;
   year: number;
-  color: string;
   customer_email?: string;
   customer_phone?: string;
   created_at: string;
@@ -41,10 +38,7 @@ const VehiclesPage: React.FC = () => {
     const [hasMore, setHasMore] = useState(true);
     const [formData, setFormData] = useState({
         plate: '',
-        brand: '',
-        model: '',
         year: '',
-        color: '',
         customer_email: '',
         customer_phone: ''
     });
@@ -161,18 +155,6 @@ const VehiclesPage: React.FC = () => {
                 return;
             }
             
-            if (!formData.brand.trim()) {
-                setError('Marka alanı zorunludur');
-                showToast('Marka alanı zorunludur', 'error');
-                return;
-            }
-            
-            if (!formData.model.trim()) {
-                setError('Model alanı zorunludur');
-                showToast('Model alanı zorunludur', 'error');
-                return;
-            }
-            
             if (!formData.year || parseInt(formData.year) < 1900 || parseInt(formData.year) > new Date().getFullYear() + 1) {
                 setError('Geçerli bir yıl giriniz');
                 showToast('Geçerli bir yıl giriniz', 'error');
@@ -181,10 +163,7 @@ const VehiclesPage: React.FC = () => {
 
             const vehicleData = {
                 plate: formData.plate.trim().toUpperCase(),
-                brand: formData.brand.trim(),
-                model: formData.model.trim(),
                 year: parseInt(formData.year),
-                color: formData.color.trim(),
                 customer_email: formData.customer_email.trim(),
                 customer_phone: formData.customer_phone.trim()
             };
@@ -209,10 +188,7 @@ const VehiclesPage: React.FC = () => {
             
             setFormData({
                 plate: '',
-                brand: '',
-                model: '',
                 year: '',
-                color: '',
                 customer_email: '',
                 customer_phone: ''
             });
@@ -341,36 +317,6 @@ const VehiclesPage: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1">Marka *</label>
-                                <input
-                                    type="text"
-                                    name="brand"
-                                    value={formData.brand}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                        theme === 'dark' 
-                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
-                                            : 'bg-white border-gray-300 text-gray-800'
-                                    }`}
-                                    placeholder="Toyota"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Model *</label>
-                                <input
-                                    type="text"
-                                    name="model"
-                                    value={formData.model}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                        theme === 'dark' 
-                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
-                                            : 'bg-white border-gray-300 text-gray-800'
-                                    }`}
-                                    placeholder="Corolla"
-                                />
-                            </div>
-                            <div>
                                 <label className="block text-sm font-medium mb-1">Yıl *</label>
                                 <input
                                     type="number"
@@ -385,21 +331,6 @@ const VehiclesPage: React.FC = () => {
                                             : 'bg-white border-gray-300 text-gray-800'
                                     }`}
                                     placeholder="2020"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Renk</label>
-                                <input
-                                    type="text"
-                                    name="color"
-                                    value={formData.color}
-                                    onChange={handleInputChange}
-                                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                        theme === 'dark' 
-                                            ? 'bg-slate-700 border-slate-600 text-gray-100' 
-                                            : 'bg-white border-gray-300 text-gray-800'
-                                    }`}
-                                    placeholder="Beyaz"
                                 />
                             </div>
                             <div>
@@ -479,20 +410,12 @@ const VehiclesPage: React.FC = () => {
                                         {vehicle.plate}
                                     </h3>
                                     <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                        {vehicle.brand} {vehicle.model}
+                                        Yıl: {vehicle.year}
                                     </p>
                                 </div>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <div className={`flex justify-between text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                <span>Yıl:</span>
-                                <span>{vehicle.year}</span>
-                            </div>
-                            <div className={`flex justify-between text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                <span>Renk:</span>
-                                <span>{vehicle.color || 'Belirtilmemiş'}</span>
-                            </div>
                             {vehicle.customer_email && (
                                 <div className={`flex justify-between text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                                     <span>E-posta:</span>

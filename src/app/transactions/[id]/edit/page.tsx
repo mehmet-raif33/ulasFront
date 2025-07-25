@@ -11,10 +11,9 @@ import { getTransactionApi, getVehiclesApi, getTransactionCategoriesApi, updateT
 interface Vehicle {
   id: string;
   plate: string;
-  brand: string;
-  model: string;
   year: number;
-  color: string;
+  customer_email?: string;
+  customer_phone?: string;
   created_at: string;
 }
 
@@ -33,15 +32,21 @@ interface Transaction {
   vehicle_id: string;
   description: string;
   amount: string;
+  expense?: string;
+  is_expense?: boolean;
   transaction_date: string;
   category_id: string;
-  created_at: string;
+  payment_method?: string;
+  notes?: string;
+  status?: string;
+  status_notes?: string;
+  status_changed_at?: string;
+  status_changed_by?: string;
   // Joined data
   vehicle_plate?: string;
-  vehicle_brand?: string;
-  vehicle_model?: string;
   personnel_name?: string;
   category_name?: string;
+  status_changed_by_name?: string;
 }
 
 const EditTransactionPage: React.FC = () => {
@@ -64,7 +69,11 @@ const EditTransactionPage: React.FC = () => {
         category_id: '',
         description: '',
         amount: '',
-        transaction_date: ''
+        expense: '',
+        is_expense: true,
+        transaction_date: '',
+        payment_method: '',
+        notes: ''
     });
 
     // Giriş yapmamış kullanıcıları landing page'e yönlendir
@@ -106,7 +115,11 @@ const EditTransactionPage: React.FC = () => {
                         category_id: transactionData.category_id,
                         description: transactionData.description || '',
                         amount: transactionData.amount,
-                        transaction_date: transactionData.transaction_date.split('T')[0]
+                        expense: transactionData.expense || '',
+                        is_expense: transactionData.is_expense !== undefined ? transactionData.is_expense : true,
+                        transaction_date: transactionData.transaction_date.split('T')[0],
+                        payment_method: transactionData.payment_method || '',
+                        notes: transactionData.notes || ''
                     });
                     
                 } catch (error: unknown) {
@@ -157,6 +170,12 @@ const EditTransactionPage: React.FC = () => {
                 setError('Geçerli bir tutar giriniz');
                 return;
             }
+
+            // Gider validasyonu
+            if (formData.is_expense && (!formData.expense || parseFloat(formData.expense) <= 0)) {
+                setError('Geçerli bir gider tutarı giriniz');
+                return;
+            }
             
             if (!formData.transaction_date) {
                 setError('İşlem tarihi zorunludur');
@@ -168,7 +187,11 @@ const EditTransactionPage: React.FC = () => {
                 category_id: formData.category_id,
                 description: formData.description,
                 amount: parseFloat(formData.amount),
-                transaction_date: formData.transaction_date
+                expense: formData.is_expense ? parseFloat(formData.expense) : undefined,
+                is_expense: formData.is_expense,
+                date: formData.transaction_date,
+                payment_method: formData.payment_method || undefined,
+                notes: formData.notes || undefined
             };
 
             await updateTransactionApi(token, transactionId, updateData);
@@ -294,10 +317,41 @@ const EditTransactionPage: React.FC = () => {
                                         <option value="">Araç Seçin</option>
                                         {vehicles.map((vehicle) => (
                                             <option key={vehicle.id} value={vehicle.id}>
-                                                {vehicle.plate} - {vehicle.brand} {vehicle.model}
+                                                {vehicle.plate}
                                             </option>
                                         ))}
                                     </select>
+                                </div>
+
+                                {/* Transaction Type Selection */}
+                                <div>
+                                    <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        İşlem Tipi *
+                                    </label>
+                                    <div className="flex gap-3">
+                                        <label className={`flex items-center cursor-pointer ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            <input
+                                                type="radio"
+                                                name="is_expense"
+                                                value="true"
+                                                checked={formData.is_expense === true}
+                                                onChange={(e) => setFormData({...formData, is_expense: e.target.value === 'true'})}
+                                                className="mr-2"
+                                            />
+                                            <span className="text-red-500 font-medium">💰 Gider</span>
+                                        </label>
+                                        <label className={`flex items-center cursor-pointer ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            <input
+                                                type="radio"
+                                                name="is_expense"
+                                                value="false"
+                                                checked={formData.is_expense === false}
+                                                onChange={(e) => setFormData({...formData, is_expense: e.target.value === 'true'})}
+                                                className="mr-2"
+                                            />
+                                            <span className="text-green-500 font-medium">💵 Gelir</span>
+                                        </label>
+                                    </div>
                                 </div>
 
                                 {/* Category Selection */}
@@ -328,7 +382,7 @@ const EditTransactionPage: React.FC = () => {
                                 {/* Amount */}
                                 <div>
                                     <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        Tutar (₺) *
+                                        {formData.is_expense ? 'Gider (₺)' : 'Gelir (₺)'} *
                                     </label>
                                     <input
                                         type="number"
@@ -365,6 +419,56 @@ const EditTransactionPage: React.FC = () => {
                                         }`}
                                     />
                                 </div>
+
+                                {/* Expense (only for expense transactions) */}
+                                {formData.is_expense && (
+                                    <div>
+                                        <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            Gerçek Gider (₺) *
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="expense"
+                                            value={formData.expense}
+                                            onChange={handleInputChange}
+                                            step="0.01"
+                                            min="0"
+                                            className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                                theme === 'dark'
+                                                    ? 'border-slate-600 bg-slate-700 text-white'
+                                                    : 'border-gray-300 bg-white text-gray-900'
+                                            }`}
+                                            placeholder="0.00"
+                                            required
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Payment Method */}
+                            <div className="mt-6">
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Ödeme Yöntemi
+                                </label>
+                                <select
+                                    name="payment_method"
+                                    value={formData.payment_method}
+                                    onChange={handleInputChange}
+                                    className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                        theme === 'dark' 
+                                            ? 'border-slate-600 bg-slate-700 text-white' 
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                >
+                                    <option value="">Ödeme Yöntemi Seçin</option>
+                                    <option value="Nakit">Nakit</option>
+                                    <option value="Kredi Kartı">Kredi Kartı</option>
+                                    <option value="Banka Kartı">Banka Kartı</option>
+                                    <option value="Havale">Havale</option>
+                                    <option value="EFT">EFT</option>
+                                    <option value="Çek">Çek</option>
+                                    <option value="Senet">Senet</option>
+                                </select>
                             </div>
 
                             {/* Description */}
@@ -383,6 +487,25 @@ const EditTransactionPage: React.FC = () => {
                                             : 'border-gray-300 bg-white text-gray-900'
                                     }`}
                                     placeholder="İşlem açıklaması..."
+                                />
+                            </div>
+
+                            {/* Notes */}
+                            <div className="mt-6">
+                                <label className={`block text-sm font-medium mb-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Notlar
+                                </label>
+                                <textarea
+                                    name="notes"
+                                    value={formData.notes}
+                                    onChange={handleInputChange}
+                                    rows={3}
+                                    className={`w-full p-3 rounded-lg border transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                        theme === 'dark' 
+                                            ? 'border-slate-600 bg-slate-700 text-white' 
+                                            : 'border-gray-300 bg-white text-gray-900'
+                                    }`}
+                                    placeholder="Ek notlar..."
                                 />
                             </div>
 

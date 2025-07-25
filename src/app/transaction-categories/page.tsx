@@ -354,6 +354,33 @@ const TransactionCategoriesPage: React.FC = () => {
                                 </span>
                             )}
                         </div>
+                        
+                        {/* İşlem sayısı 0 ise uyarı göster */}
+                        {category.transaction_count === 0 && (
+                            <div className={`mt-2 p-2 rounded-lg text-xs ${
+                                theme === 'dark' ? 'bg-orange-900/20 text-orange-200 border border-orange-800' 
+                                : 'bg-orange-50 text-orange-800 border border-orange-200'
+                            }`}>
+                                ⚠️ Bu kategoriye ait henüz işlem bulunmuyor.
+                            </div>
+                        )}
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                            <button
+                                onClick={() => router.push(`/transactions?category_id=${category.id}`)}
+                                disabled={category.transaction_count === 0}
+                                className={`w-full text-center py-2 px-4 rounded-lg transition-colors ${
+                                    category.transaction_count === 0
+                                        ? theme === 'dark'
+                                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : theme === 'dark' 
+                                            ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                            : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                }`}
+                            >
+                                {category.transaction_count === 0 ? 'İşlem Yok' : 'İşlemleri Görüntüle'}
+                            </button>
+                        </div>
                     </motion.div>
                 ))}
             </motion.div>

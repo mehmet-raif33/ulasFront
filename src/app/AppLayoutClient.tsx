@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import { RootState } from './redux/store';
 import { selectIsLoggedIn } from './redux/sliceses/authSlices';
 import NavbarCom from './components/NavbarCom';
@@ -27,8 +28,10 @@ export const useToast = () => {
 const AppLayoutClient: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const theme = useSelector((state: RootState) => state.theme.theme);
   const isLoggedIn = useSelector(selectIsLoggedIn);
+  const router = useRouter();
   const [currentPath, setCurrentPath] = useState<string>('');
   const [isOpen, setIsOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
   
   // Toast state
   const [toast, setToast] = useState<{
@@ -59,11 +62,37 @@ const AppLayoutClient: React.FC<{ children: React.ReactNode }> = ({ children }) 
   };
 
   useEffect(() => {
+    setMounted(true);
     setCurrentPath(window.location.pathname);
   }, []);
 
+  // Otomatik yönlendirme kontrolü
+  useEffect(() => {
+    if (!mounted) return;
+
+    const token = localStorage.getItem('token');
+    const currentPath = window.location.pathname;
+
+    // Sadece token yoksa ve korumalı sayfalardaysa landing page'e yönlendir
+    if (!token && currentPath !== '/auth' && currentPath !== '/landing') {
+      router.push('/landing');
+    }
+    // Token varsa ve auth/landing sayfalarındaysa ana sayfaya yönlendir
+    else if (token && (currentPath === '/auth' || currentPath === '/landing')) {
+      router.push('/');
+    }
+  }, [isLoggedIn, router, mounted]);
+
   // Check if current page is auth or landing page
   const isAuthOrLandingPage = currentPath === '/auth' || currentPath === '/landing';
+
+  if (!mounted) {
+    return (
+      <div className="flex-1 min-h-screen w-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <ToastContext.Provider value={{ showToast }}>
@@ -85,7 +114,7 @@ const AppLayoutClient: React.FC<{ children: React.ReactNode }> = ({ children }) 
           // Conditional bottom padding - remove on auth and landing pages for mobile
           isAuthOrLandingPage 
             ? 'pb-0' 
-            : 'pb-4 lg:pb-0'
+            : 'pb-20 lg:pb-0' // Bottom padding for mobile to account for bottom navigation (h-20 = 80px)
         }`}>
           {children}
         </main>
@@ -103,12 +132,11 @@ const AppLayoutClient: React.FC<{ children: React.ReactNode }> = ({ children }) 
   );
 };
 
+// Wrapper component with Redux Provider
 const AppLayoutWithProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <ReduxProvider>
-      <AppLayoutClient>
-        {children}
-      </AppLayoutClient>
+      <AppLayoutClient>{children}</AppLayoutClient>
     </ReduxProvider>
   );
 };

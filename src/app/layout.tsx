@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ulas Tech - Araç Filo Yönetim Sistemi",
-  description: "Modern ve kullanıcı dostu araç filo yönetim sistemi",
+  title: "Demirhan - İşletme Yönetim Sistemi",
+  description: "Demirhan ile araç işlemlerinizi kaydedin, ciro hesaplamalarınızı yapın ve işletmenizi yönetin",
 };
 
 export default function RootLayout({

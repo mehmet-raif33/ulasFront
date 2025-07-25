@@ -9,7 +9,14 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   // Development ortamında local server'ı kullan
   API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-} 
+}
+
+console.log('Environment check:', {
+  NODE_ENV: process.env.NODE_ENV,
+  NEXT_PUBLIC_SERVER_API: process.env.NEXT_PUBLIC_SERVER_API,
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  Final_API_BASE_URL: API_BASE_URL
+}); 
 
 // Fallback için güvenlik kontrolü - protokolü garanti et
 if (!API_BASE_URL || !API_BASE_URL.startsWith('http')) {
@@ -109,14 +116,25 @@ export async function healthCheckApi() {
 
 // Transaction Categories API
 export async function getTransactionCategoriesApi(token: string) {
+  console.log('Fetching transaction categories from:', `${API_BASE_URL}/transaction-categories`);
+  
   const res = await fetch(`${API_BASE_URL}/transaction-categories`, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
+  
+  console.log('Transaction Categories API Response Status:', res.status);
+  
   if (!res.ok) {
     const error = await res.json();
+    // Token expired durumunda diğer sekmelere bildir
+    if (res.status === 401) {
+      broadcastTokenExpired();
+    }
     throw new Error(error.message || 'Kategoriler alınamadı');
   }
+  
   const data = await res.json();
+  console.log('Transaction Categories API Response Data:', data);
   return data;
 }
 
@@ -197,10 +215,7 @@ export async function getVehicleApi(token: string, plate: string) {
 
 export async function createVehicleApi(token: string, data: { 
   plate: string; 
-  brand: string; 
-  model: string; 
   year: number; 
-  color: string; 
   customer_email?: string; 
   customer_phone?: string; 
 }) {
@@ -220,10 +235,9 @@ export async function createVehicleApi(token: string, data: {
 }
 
 export async function updateVehicleApi(token: string, plate: string, data: { 
-  brand?: string; 
-  model?: string; 
   year?: number; 
-  color?: string; 
+  customer_email?: string; 
+  customer_phone?: string; 
 }) {
   const res = await fetch(`${API_BASE_URL}/vehicles/${plate}`, {
     method: 'PUT',
@@ -369,14 +383,26 @@ export async function getTransactionsApi(token: string, params?: {
   
   const url = `${API_BASE_URL}/transactions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
   
+  console.log('Fetching transactions from:', url);
+  
   const res = await fetch(url, {
     headers: { 'Authorization': `Bearer ${token}` },
   });
+  
+  console.log('Transactions API Response Status:', res.status);
+  
   if (!res.ok) {
     const error = await res.json();
+    // Token expired durumunda diğer sekmelere bildir
+    if (res.status === 401) {
+      broadcastTokenExpired();
+    }
     throw new Error(error.message || 'İşlemler alınamadı');
   }
-  return res.json();
+  
+  const data = await res.json();
+  console.log('Transactions API Response Data:', data);
+  return data;
 }
 
 export async function getTransactionApi(token: string, id: string) {
@@ -394,6 +420,8 @@ export async function createTransactionApi(token: string, data: {
   vehicle_id: string; 
   category_id: string; 
   amount: number; 
+  expense?: number;
+  is_expense?: boolean;
   description: string; 
   transaction_date: string; 
 }) {
@@ -414,10 +442,15 @@ export async function createTransactionApi(token: string, data: {
 
 export async function updateTransactionApi(token: string, id: string, data: { 
   vehicle_id?: string; 
+  personnel_id?: string | null;
   category_id?: string; 
   amount?: number; 
+  expense?: number;
+  is_expense?: boolean;
   description?: string; 
-  transaction_date?: string; 
+  date?: string; 
+  payment_method?: string;
+  notes?: string;
 }) {
   const res = await fetch(`${API_BASE_URL}/transactions/${id}`, {
     method: 'PUT',
@@ -509,6 +542,18 @@ export async function getActivitiesApi(token: string) {
   }
   const data = await res.json();
   return data.data || data; // Backend'den gelen veriyi düzgün şekilde al
+}
+
+export async function getTotalRevenueApi(token: string) {
+  const res = await fetch(`${API_BASE_URL}/activities/total-revenue`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Toplam ciro alınamadı');
+  }
+  const data = await res.json();
+  return data.data;
 } 
 
 export async function getVehiclesCountApi(token: string) {
@@ -548,6 +593,41 @@ export async function getTransactionsStatsApi(token: string, start_date?: string
     throw new Error(error.message || 'İşlem istatistikleri alınamadı');
   }
   const data = await res.json();
+  return data.stats;
+}
+
+// Dinamik işlem istatistikleri API
+export async function getTransactionsSummaryStatsApi(token: string, params?: { 
+  vehicle_id?: string; 
+  personnel_id?: string; 
+  category_id?: string; 
+  start_date?: string; 
+  end_date?: string; 
+}) {
+  const queryParams = new URLSearchParams();
+  if (params?.vehicle_id) queryParams.append('vehicle_id', params.vehicle_id);
+  if (params?.personnel_id) queryParams.append('personnel_id', params.personnel_id);
+  if (params?.category_id) queryParams.append('category_id', params.category_id);
+  if (params?.start_date) queryParams.append('start_date', params.start_date);
+  if (params?.end_date) queryParams.append('end_date', params.end_date);
+  
+  const url = `${API_BASE_URL}/transactions/stats/summary${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  
+  console.log('Fetching transaction stats from:', url);
+  
+  const res = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  
+  console.log('Transaction Stats API Response Status:', res.status);
+  
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'İşlem istatistikleri alınamadı');
+  }
+  
+  const data = await res.json();
+  console.log('Transaction Stats API Response Data:', data);
   return data.stats;
 }
 

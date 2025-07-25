@@ -32,37 +32,45 @@ const Toast: React.FC<ToastProps> = ({
   }, [isVisible, duration, onClose]);
 
   const getToastStyles = () => {
-    const baseStyles = "fixed top-4 right-4 z-50 max-w-sm w-full p-4 rounded-lg shadow-lg border backdrop-blur-sm";
+    // Mobile-first responsive design
+    const baseStyles = "fixed z-50 p-4 rounded-lg shadow-lg border backdrop-blur-sm transition-all duration-200";
+    
+    // Mobile: bottom center, full width with margins
+    // Desktop: top right, max width
+    const responsiveStyles = `
+      bottom-4 left-4 right-4 mx-auto max-w-sm
+      md:top-4 md:right-4 md:left-auto md:bottom-auto md:mx-0
+    `;
     
     switch (type) {
       case 'success':
-        return `${baseStyles} ${
+        return `${baseStyles} ${responsiveStyles} ${
           theme === 'dark' 
-            ? 'bg-green-900/90 border-green-700 text-green-100' 
+            ? 'bg-green-900/95 border-green-700 text-green-100' 
             : 'bg-green-50 border-green-200 text-green-800'
         }`;
       case 'error':
-        return `${baseStyles} ${
+        return `${baseStyles} ${responsiveStyles} ${
           theme === 'dark' 
-            ? 'bg-red-900/90 border-red-700 text-red-100' 
+            ? 'bg-red-900/95 border-red-700 text-red-100' 
             : 'bg-red-50 border-red-200 text-red-800'
         }`;
       case 'warning':
-        return `${baseStyles} ${
+        return `${baseStyles} ${responsiveStyles} ${
           theme === 'dark' 
-            ? 'bg-yellow-900/90 border-yellow-700 text-yellow-100' 
+            ? 'bg-yellow-900/95 border-yellow-700 text-yellow-100' 
             : 'bg-yellow-50 border-yellow-200 text-yellow-800'
         }`;
       case 'info':
-        return `${baseStyles} ${
+        return `${baseStyles} ${responsiveStyles} ${
           theme === 'dark' 
-            ? 'bg-blue-900/90 border-blue-700 text-blue-100' 
+            ? 'bg-blue-900/95 border-blue-700 text-blue-100' 
             : 'bg-blue-50 border-blue-200 text-blue-800'
         }`;
       default:
-        return `${baseStyles} ${
+        return `${baseStyles} ${responsiveStyles} ${
           theme === 'dark' 
-            ? 'bg-gray-900/90 border-gray-700 text-gray-100' 
+            ? 'bg-gray-900/95 border-gray-700 text-gray-100' 
             : 'bg-gray-50 border-gray-200 text-gray-800'
         }`;
     }
@@ -119,9 +127,9 @@ const Toast: React.FC<ToastProps> = ({
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, x: 300, scale: 0.8 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: 300, scale: 0.8 }}
+          initial={{ opacity: 0, y: 100, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 100, scale: 0.9 }}
           transition={{ 
             type: "spring", 
             stiffness: 300, 
@@ -135,18 +143,19 @@ const Toast: React.FC<ToastProps> = ({
               {getIcon()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium leading-5">
+              <p className="text-sm font-medium leading-5 break-words">
                 {message}
               </p>
             </div>
             <div className="flex-shrink-0 ml-3">
               <button
                 onClick={onClose}
-                className={`inline-flex rounded-md p-1.5 transition-colors duration-200 hover:bg-opacity-20 ${
+                className={`inline-flex rounded-md p-2 transition-colors duration-200 hover:bg-opacity-20 touch-manipulation ${
                   theme === 'dark' 
                     ? 'hover:bg-white hover:bg-opacity-20' 
                     : 'hover:bg-black hover:bg-opacity-10'
                 }`}
+                aria-label="Kapat"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
