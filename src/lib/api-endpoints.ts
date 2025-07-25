@@ -1,5 +1,4 @@
 import { enhancedApiClient } from './enhanced-api-client';
-import type { ApiResponse } from './enhanced-api-client';
 
 // Auth API endpoints
 export const authApi = {
@@ -58,7 +57,7 @@ export const transactionApi = {
     end_date?: string;
   }) => {
     const queryString = params ? `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}` : '';
     
@@ -130,7 +129,7 @@ export const transactionApi = {
     end_date?: string;
   }) => {
     const queryString = params ? `?${new URLSearchParams(
-      Object.entries(params).filter(([_, value]) => value !== undefined)
+      Object.entries(params).filter(([, value]) => value !== undefined)
         .map(([key, value]) => [key, String(value)])
     ).toString()}` : '';
     
@@ -473,18 +472,6 @@ export const api = {
   category: categoryApi,
   activity: activityApi,
   health: healthApi,
-};
-
-// Export individual APIs for convenience
-export {
-  authApi,
-  userApi,
-  transactionApi,
-  vehicleApi,
-  personnelApi,
-  categoryApi,
-  activityApi,
-  healthApi,
 };
 
 export default api; 

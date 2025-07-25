@@ -40,26 +40,37 @@ interface RequestConfig {
   requiresAuth?: boolean;
 }
 
+// Internal request config with all required fields
+interface InternalRequestConfig {
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  headers: Record<string, string>;
+  body?: unknown;
+  timeout: number;
+  retries: number;
+  requiresAuth: boolean;
+  url: string;
+}
+
 // Request interceptor type
-type RequestInterceptor = (config: RequestConfig & { url: string }) => Promise<RequestConfig & { url: string }>;
+type RequestInterceptor = (config: InternalRequestConfig) => Promise<InternalRequestConfig>;
 
 // Response interceptor type
-type ResponseInterceptor = (response: Response, config: RequestConfig & { url: string }) => Promise<Response>;
+type ResponseInterceptor = (response: Response, config: InternalRequestConfig) => Promise<Response>;
 
 // Error interceptor type
-type ErrorInterceptor = (error: ApiError, config: RequestConfig & { url: string }) => Promise<never>;
+type ErrorInterceptor = (error: ApiError, config: InternalRequestConfig) => Promise<never>;
 
 // Custom error class
-export class ApiClientError extends Error {
+export class ApiClientError extends Error implements ApiError {
   public statusCode: number;
-  public errorCode: string;
+  public error: string;
   public originalError?: any;
 
-  constructor(message: string, statusCode: number = 500, errorCode: string = 'UNKNOWN_ERROR', originalError?: any) {
+  constructor(message: string, statusCode: number = 500, error: string = 'UNKNOWN_ERROR', originalError?: any) {
     super(message);
     this.name = 'ApiClientError';
     this.statusCode = statusCode;
-    this.errorCode = errorCode;
+    this.error = error;
     this.originalError = originalError;
   }
 }
@@ -169,7 +180,7 @@ class EnhancedApiClient {
       console.error('❌ Error interceptor:', {
         message: error.message,
         statusCode: error.statusCode,
-        errorCode: error.errorCode,
+        error: error.error,
         url: config.url
       });
 
@@ -180,7 +191,7 @@ class EnhancedApiClient {
       }
 
       // Handle network errors
-      if (error.statusCode === 0 || error.errorCode === 'NETWORK_ERROR') {
+      if (error.statusCode === 0 || error.error === 'NETWORK_ERROR') {
         console.log('🌐 Network error detected');
         // Could add network status checking here
       }
@@ -283,7 +294,7 @@ class EnhancedApiClient {
     config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {
     const fullConfig = {
-      method: 'GET' as const,
+      method: (config.method || 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
       headers: {},
       timeout: this.defaultTimeout,
       retries: this.defaultRetries,

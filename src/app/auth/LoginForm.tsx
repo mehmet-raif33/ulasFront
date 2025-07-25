@@ -57,7 +57,7 @@ const LoginForm: React.FC = () => {
       const userData = {
         id: user.id.toString(),
         email: user.email,
-        name: user.username || user.full_name || user.name || "",
+        name: user.username || user.full_name || "",
         role: user.role === "admin" ? "admin" : "user" as "admin" | "user",
       };
       
