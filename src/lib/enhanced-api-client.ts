@@ -342,7 +342,12 @@ class EnhancedApiClient {
         }
 
         console.log(`✅ Request successful: ${fullConfig.method} ${fullConfig.url}`);
-        return data;
+        
+        // Return consistent ApiResponse format
+        return {
+          success: true,
+          data: data
+        } as ApiResponse<T>;
 
       } catch (error) {
         // Convert various error types to ApiClientError
