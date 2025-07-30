@@ -188,19 +188,7 @@ const PersonnelEditPage: React.FC<PersonnelEditPageProps> = ({ params }) => {
     }
   }, [params, isLoggedIn]);
 
-  // Giriş yapmamış kullanıcıları landing page'e yönlendir
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/landing');
-    }
-  }, [isLoggedIn, router]);
-
-  // Admin olmayan kullanıcıları ana sayfaya yönlendir
-  useEffect(() => {
-    if (isLoggedIn && user?.role !== 'admin') {
-      router.push('/');
-    }
-  }, [isLoggedIn, user, router]);
+  // ✅ Auth kontrolleri kaldırıldı - AuthInitializer yönlendirme yapacak
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;

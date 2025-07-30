@@ -1,22 +1,23 @@
 import { broadcastTokenExpired } from './utils/broadcastChannel';
 
-let API_BASE_URL = '';
+// Environment'a göre API URL'ini belirle
+const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV === 'development') {
+    // Development ortamında local server'ı kullan
+    return process.env.NEXT_PUBLIC_SERVER_API || 'http://localhost:5000';
+  } else {
+    // Production ortamında Railway server'ını kullan
+    return process.env.NEXT_PUBLIC_SERVER_API1 || 'https://ulasserver-production.up.railway.app';
+  }
+};
 
-// Environment variables'dan API URL'ini al
-if (process.env.NODE_ENV === 'production') {
-  // Production ortamında Railway server'ını kullan
-  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API1 || process.env.NEXT_PUBLIC_API_URL || 'https://ulasserver-production.up.railway.app';
-} else {
-  // Development ortamında local server'ı kullan
-  API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_API || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-}
+const API_BASE_URL = getApiBaseUrl();
 
 console.log('🔧 API Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
   NEXT_PUBLIC_SERVER_API: process.env.NEXT_PUBLIC_SERVER_API,
   NEXT_PUBLIC_SERVER_API1: process.env.NEXT_PUBLIC_SERVER_API1,
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-  Final_API_BASE_URL: API_BASE_URL
+  SELECTED_URL: API_BASE_URL
 });
 
 // Add debugging for Railway deployment
@@ -432,14 +433,19 @@ export async function updatePersonnelApi(token: string, id: string, data: {
   return res.json();
 }
 
-export async function deletePersonnelApi(token: string, id: string) {
-  const res = await fetch(`${API_BASE_URL}/personnel/${id}`, {
-    method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` },
+// Personel durumu güncelle (aktif/pasif)
+export async function updatePersonnelStatusApi(token: string, id: string, is_active: boolean) {
+  const res = await fetch(`${API_BASE_URL}/personnel/${id}/status`, {
+    method: 'PATCH',
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ is_active })
   });
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || 'Personel silinemedi');
+    throw new Error(error.message || 'Personel durumu güncellenemedi');
   }
   return res.json();
 }

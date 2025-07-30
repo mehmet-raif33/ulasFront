@@ -47,12 +47,7 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
     const [activeTab, setActiveTab] = useState("overview");
     const [plate, setPlate] = useState<string>("");
 
-    // Giriş yapmamış kullanıcıları landing page'e yönlendir
-    useEffect(() => {
-        if (!isLoggedIn) {
-            router.push('/landing');
-        }
-    }, [isLoggedIn, router]);
+    // ✅ Auth kontrolü kaldırıldı - AuthInitializer yönlendirme yapacak
 
     // Handle async params - optimize with useCallback
     const handleParams = useCallback(async () => {
@@ -399,7 +394,7 @@ const VehiclePage: React.FC<VehiclePageProps> = ({ params }) => {
                                     Araç İşlemleri
                                 </h3>
                                 <Link 
-                                    href="/add-transaction"
+                                    href={`/vehicles/${vehicle.plate}/add-transaction`}
                                     className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
                                         theme === 'dark'
                                             ? 'bg-blue-600 hover:bg-blue-700 text-white'

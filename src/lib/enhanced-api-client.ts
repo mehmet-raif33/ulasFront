@@ -355,7 +355,14 @@ class EnhancedApiClient {
 
         console.log(`✅ Request successful: ${fullConfig.method} ${fullConfig.url}`);
         
-        // Return consistent ApiResponse format
+        // 🔧 FIX: Avoid double wrapping if backend already returns ApiResponse format
+        // Check if backend response already has success/data structure
+        if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
+          console.log('📦 Backend already returned ApiResponse format, avoiding double wrap');
+          return data as ApiResponse<T>;
+        }
+        
+        // Return consistent ApiResponse format only if backend doesn't already use it
         return {
           success: true,
           data: data

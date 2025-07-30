@@ -66,22 +66,7 @@ const AppLayoutClient: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setCurrentPath(window.location.pathname);
   }, []);
 
-  // Otomatik yönlendirme kontrolü
-  useEffect(() => {
-    if (!mounted) return;
-
-    const token = localStorage.getItem('token');
-    const currentPath = window.location.pathname;
-
-    // Sadece token yoksa ve korumalı sayfalardaysa landing page'e yönlendir
-    if (!token && currentPath !== '/auth' && currentPath !== '/landing') {
-      router.push('/landing');
-    }
-    // Token varsa ve auth/landing sayfalarındaysa ana sayfaya yönlendir
-    else if (token && (currentPath === '/auth' || currentPath === '/landing')) {
-      router.push('/');
-    }
-  }, [isLoggedIn, router, mounted]);
+  // ✅ Auth kontrolü tamamen kaldırıldı - Sadece AuthInitializer yönlendirme yapacak
 
   // Check if current page is auth or landing page
   const isAuthOrLandingPage = currentPath === '/auth' || currentPath === '/landing';

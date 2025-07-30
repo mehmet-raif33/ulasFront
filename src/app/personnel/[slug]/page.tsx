@@ -99,19 +99,7 @@ const PersonnelDetailPage: React.FC<PersonnelPageProps> = ({ params }) => {
     }
   }, [params, isLoggedIn]);
 
-  // Giriş yapmamış kullanıcıları landing page'e yönlendir
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/landing');
-    }
-  }, [isLoggedIn, router]);
-
-  // Admin olmayan kullanıcıları ana sayfaya yönlendir
-  useEffect(() => {
-    if (isLoggedIn && user?.role !== 'admin') {
-      router.push('/');
-    }
-  }, [isLoggedIn, user, router]);
+  // ✅ Auth kontrolleri kaldırıldı - AuthInitializer yönlendirme yapacak
 
   // Giriş yapmamış kullanıcılar için loading göster
   if (!isLoggedIn) {

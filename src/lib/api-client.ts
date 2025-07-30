@@ -1,10 +1,19 @@
 import { broadcastTokenExpired } from '../app/utils/broadcastChannel';
 
+// Environment'a göre API URL'ini belirle
+const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV === 'development') {
+    // Development ortamında local server'ı kullan
+    return process.env.NEXT_PUBLIC_SERVER_API || 'http://localhost:5000';
+  } else {
+    // Production ortamında Railway server'ını kullan
+    return process.env.NEXT_PUBLIC_SERVER_API1 || 'https://ulasserver-production.up.railway.app';
+  }
+};
+
 // API Configuration
 const API_CONFIG = {
-  baseURL: process.env.NODE_ENV === 'production' 
-    ? process.env.NEXT_PUBLIC_SERVER_API1 || process.env.NEXT_PUBLIC_API_URL || 'https://ulasserver-production.up.railway.app'
-    : process.env.NEXT_PUBLIC_SERVER_API || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  baseURL: getApiBaseUrl(),
   timeout: 10000,
   retries: 3
 };
@@ -13,9 +22,8 @@ const API_CONFIG = {
 console.log('🔧 API Client Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
   BASE_URL: API_CONFIG.baseURL,
-  NEXT_PUBLIC_SERVER_API1: process.env.NEXT_PUBLIC_SERVER_API1,
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-  NEXT_PUBLIC_SERVER_API: process.env.NEXT_PUBLIC_SERVER_API
+  NEXT_PUBLIC_SERVER_API: process.env.NEXT_PUBLIC_SERVER_API,
+  NEXT_PUBLIC_SERVER_API1: process.env.NEXT_PUBLIC_SERVER_API1
 });
 
 // Token validation helper

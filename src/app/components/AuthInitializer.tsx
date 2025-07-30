@@ -44,9 +44,10 @@ const AuthInitializer = () => {
             tokenInfo 
           });
           
-          if (userData && isAuthenticated) {
+          // ✅ Token kontrolü: userData + isAuthenticated + token geçerli olmalı
+          if (userData && isAuthenticated && tokenInfo && tokenInfo.isValid) {
             log.info('User authenticated via token manager', { userId: userData.id, email: userData.email });
-            console.log('✅ User is authenticated, restoring auth state');
+            console.log('✅ User is authenticated with valid token, restoring auth state');
             
             // Kullanıcı bilgilerini Redux'a kaydet (role mapping ile)
             dispatch(restoreAuth({
@@ -56,23 +57,41 @@ const AuthInitializer = () => {
               role: userData.role === 'admin' ? 'admin' : 'user' as 'admin' | 'user',
             }));
             
-            // Landing page veya auth sayfasındaysa dashboard'a yönlendir
+            // SADECE auth veya landing sayfasındaysa dashboard'a yönlendir
+            // Diğer sayfalarda kullanıcı kaldığı yerde kalsın
             const currentPath = window.location.pathname;
             if (currentPath === '/landing' || currentPath === '/auth') {
-              log.debug('Redirecting from auth page to dashboard', { from: currentPath });
-              console.log('🔄 Redirecting to dashboard from:', currentPath);
+              log.debug('Redirecting from auth/landing page to dashboard', { from: currentPath });
+              console.log('🔄 Redirecting to dashboard from auth/landing page:', currentPath);
               router.push('/');
+            } else {
+              console.log('✅ User stays on current page:', currentPath);
             }
           } else {
+            // Token yoksa, expire olmuşsa veya geçersizse
+            if (tokenInfo && !tokenInfo.isValid) {
+              console.log('⏰ Token is expired, clearing auth state');
+              log.warn('Token expired during initialization', { 
+                expiresAt: tokenInfo.expiresAt, 
+                now: Date.now() 
+              });
+              // Expired token'ı temizle
+              await tokenManager.clearTokens();
+            }
+            
             log.info('No valid authentication found');
             console.log('❌ No valid authentication - clearing auth state');
             
             // Token yoksa korumalı sayfalardaysa landing page'e yönlendir
             const currentPath = window.location.pathname;
-            if (currentPath !== '/landing' && currentPath !== '/auth') {
-              log.debug('Redirecting to landing page', { from: currentPath });
-              console.log('🔄 Redirecting to landing from:', currentPath);
+            const isPublicPage = currentPath === '/landing' || currentPath === '/auth';
+            
+            if (!isPublicPage) {
+              log.debug('Redirecting to landing page - no valid auth', { from: currentPath });
+              console.log('🔄 No valid auth found, redirecting to landing from:', currentPath);
               router.push('/landing');
+            } else {
+              console.log('✅ Already on public page:', currentPath);
             }
           }
         } catch (error) {

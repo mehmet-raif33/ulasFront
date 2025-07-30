@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
-import { selectIsLoggedIn, selectUser } from '../redux/sliceses/authSlices';
+import { selectIsLoggedIn, selectUser, selectIsInitialized } from '../redux/sliceses/authSlices';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { getTransactionCategoriesApi, createTransactionCategoryApi, updateTransactionCategoryApi, deleteTransactionCategoryApi } from '../api';
@@ -22,6 +22,7 @@ interface TransactionCategory {
 const TransactionCategoriesPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
     const isLoggedIn = useSelector(selectIsLoggedIn);
+    const isInitialized = useSelector(selectIsInitialized);
     const user = useSelector(selectUser);
     const router = useRouter();
     const { showToast } = useToast();
@@ -36,19 +37,18 @@ const TransactionCategoriesPage: React.FC = () => {
 
 
 
-    // Giriş yapmamış kullanıcıları landing page'e yönlendir
-    useEffect(() => {
-        if (!isLoggedIn) {
-            router.push('/landing');
-        }
-    }, [isLoggedIn, router]);
+    // ✅ Auth kontrolü kaldırıldı - AuthInitializer yönlendirme yapacak
 
-    // Admin olmayan kullanıcıları ana sayfaya yönlendir
+    // Admin olmayan kullanıcıları ana sayfaya yönlendir - SADECE auth initialize edildikten sonra
     useEffect(() => {
+        // ✅ Auth henüz initialize edilmediyse bekle
+        if (!isInitialized) return;
+        
         if (isLoggedIn && user?.role !== 'admin') {
+            console.log('🔄 [TransactionCategories] Non-admin user, redirecting to dashboard');
             router.push('/');
         }
-    }, [isLoggedIn, user, router]);
+    }, [isLoggedIn, isInitialized, user, router]); // ✅ isInitialized dependency eklendi
 
     // Load categories on component mount
     useEffect(() => {

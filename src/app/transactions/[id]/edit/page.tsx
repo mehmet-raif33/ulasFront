@@ -76,14 +76,9 @@ const EditTransactionPage: React.FC = () => {
         notes: ''
     });
 
-    // Giriş yapmamış kullanıcıları landing page'e yönlendir
-    useEffect(() => {
-        if (!isLoggedIn) {
-            router.push('/landing');
-        }
-    }, [isLoggedIn, router]);
+    // ✅ Auth kontrolü kaldırıldı - AuthInitializer yönlendirme yapacak
 
-    // Load data on component mount
+    // Transaction'ı ve diğer verileri yükle
     useEffect(() => {
         if (isLoggedIn && transactionId) {
             const loadData = async () => {

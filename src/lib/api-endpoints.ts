@@ -343,7 +343,16 @@ export const personnelApi = {
 export const categoryApi = {
   // Get all categories
   getTransactionCategories: () =>
-    enhancedApiClient.get<{ categories: any[] }>('/transaction-categories'),
+    enhancedApiClient.get<{
+      success: boolean;
+      data: Array<{
+        id: number;
+        name: string;
+        description?: string;
+        created_at?: string;
+        transaction_count?: number;
+      }>;
+    }>('/transaction-categories'),
 
   // Create category
   createTransactionCategory: (data: { name: string }) =>
@@ -457,6 +466,650 @@ export const activityApi = {
   },
 };
 
+// Profit Analysis API endpoints
+export const profitApi = {
+  // NEW: Daily profit analysis
+  getDailyProfit: (date: string, categories?: number[]) => {
+    const categoryParam = categories && categories.length > 0 ? `&categories=${categories.join(',')}` : '';
+    return enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        period: {
+          type: 'daily';
+          date: string;
+          dayName: string;
+        };
+        summary: {
+          totalRevenue: number;
+          totalExpense: number;
+          totalProfit: number;
+          profitMargin: number;
+          transactionCount: number;
+          averageTransaction: number;
+        };
+        breakdowns: {
+          categories: Array<{
+            category: string;
+            revenue: number;
+            expense: number;
+            profit: number;
+            profitMargin: number;
+            percentage: string;
+          }>;
+          vehicles: Array<{
+            vehicle: string;
+            revenue: number;
+            expense: number;
+            profit: number;
+            profitMargin: number;
+            percentage: string;
+          }>;
+        };
+        transactions: Array<{
+          id: number;
+          revenue: number;
+          expense: number;
+          profit: number;
+          description: string;
+          transaction_date: string;
+          category_name: string;
+          vehicle_plate: string;
+          personnel_name: string;
+          is_expense: boolean;
+        }>;
+      };
+    }>(`/profit/daily?date=${date}${categoryParam}`);
+  },
+
+  // NEW: Weekly profit analysis
+  getWeeklyProfit: (year?: number, week?: number, categories?: number[]) => {
+    const params = new URLSearchParams();
+    if (year) params.append('year', year.toString());
+    if (week) params.append('week', week.toString());
+    if (categories && categories.length > 0) params.append('categories', categories.join(','));
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    
+    return enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        period: {
+          type: 'weekly';
+          year: number;
+          week: number;
+          startDate: string;
+          endDate: string;
+        };
+        summary: {
+          totalRevenue: number;
+          totalExpense: number;
+          totalProfit: number;
+          profitMargin: number;
+          transactionCount: number;
+          averageTransaction: number;
+          averageDailyProfit: number;
+        };
+        breakdowns: {
+          daily: Array<{
+            rapor_bölümü: string;
+            tarih: string;
+            gun_adi: string;
+            gunluk_gelir: number;
+            gunluk_gider: number;
+            gunluk_islem_sayisi: number;
+            gunluk_kar: number;
+          }>;
+          categories: Array<{
+            category: string;
+            revenue: number;
+            expense: number;
+            profit: number;
+            profitMargin: number;
+            percentage: string;
+          }>;
+          vehicles: Array<{
+            rapor_bölümü: string;
+            arac_plaka: string;
+            arac_bilgisi: string;
+            arac_gelir: number;
+            arac_gider: number;
+            arac_kar: number;
+            arac_kar_marji: number;
+            islem_sayisi: number;
+          }>;
+          personnel: Array<{
+            rapor_bölümü: string;
+            personel_adi: string;
+            personel_gelir: number;
+            personel_gider: number;
+            personel_kar: number;
+            personel_kar_marji: number;
+            islem_sayisi: number;
+            ortalama_islem_tutari: number;
+          }>;
+        };
+      };
+    }>(`/profit/weekly${queryString}`);
+  },
+
+  // NEW: Monthly profit analysis
+  getMonthlyProfit: (year: number, month: number, categories?: number[]) => {
+    const categoryParam = categories && categories.length > 0 ? `&categories=${categories.join(',')}` : '';
+    return enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        period: {
+          type: 'monthly';
+          year: number;
+          month: number;
+          monthName: string;
+          startDate: string;
+          endDate: string;
+          dayCount: number;
+        };
+        summary: {
+          totalRevenue: number;
+          totalExpense: number;
+          totalProfit: number;
+          profitMargin: number;
+          transactionCount: number;
+          averageTransaction: number;
+          averageDailyProfit: number;
+        };
+        analysis: {
+          basicAnalysis: {
+            rapor_bölümü: string;
+            analiz_periyodu: string;
+            toplam_gelir: number;
+            toplam_gider: number;
+            net_kar: number;
+            kar_marji_yuzde: number;
+            toplam_islem_sayisi: number;
+            ortalama_islem_tutari: number;
+          };
+          categoryAnalysis: Array<{
+            rapor_bölümü: string;
+            kategori_adi: string;
+            kategori_gelir: number;
+            kategori_gider: number;
+            kategori_kar: number;
+            kategori_kar_marji: number;
+            islem_sayisi: number;
+          }>;
+          vehicleAnalysis: Array<{
+            rapor_bölümü: string;
+            arac_plaka: string;
+            arac_bilgisi: string;
+            arac_gelir: number;
+            arac_gider: number;
+            arac_kar: number;
+            arac_kar_marji: number;
+            islem_sayisi: number;
+          }>;
+          personnelAnalysis: Array<{
+            rapor_bölümü: string;
+            personel_adi: string;
+            personel_gelir: number;
+            personel_gider: number;
+            personel_kar: number;
+            personel_kar_marji: number;
+            islem_sayisi: number;
+            ortalama_islem_tutari: number;
+          }>;
+          generalStats: {
+            rapor_bölümü: string;
+            gelir_islem_sayisi: number;
+            gider_islem_sayisi: number;
+            max_gelir_islem: number;
+            max_gider_islem: number;
+            ort_gelir_islem: number;
+            ort_gider_islem: number;
+            aktif_arac_sayisi: number;
+            aktif_personel_sayisi: number;
+            kullanilan_kategori_sayisi: number;
+          };
+        };
+        trends: {
+          dailyTrend: Array<{
+            rapor_bölümü: string;
+            tarih: string;
+            gun_adi: string;
+            gunluk_gelir: number;
+            gunluk_gider: number;
+            gunluk_kar: number;
+            gunluk_islem_sayisi: number;
+          }>;
+        };
+      };
+    }>(`/profit/monthly?year=${year}&month=${month}${categoryParam}`);
+  },
+
+  // NEW: Yearly profit analysis
+  getYearlyProfit: (year: number, categories?: number[]) => {
+    const categoryParam = categories && categories.length > 0 ? `&categories=${categories.join(',')}` : '';
+    return enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        period: {
+          type: 'yearly';
+          year: number;
+          startDate: string;
+          endDate: string;
+        };
+        summary: {
+          totalRevenue: number;
+          totalExpense: number;
+          totalProfit: number;
+          profitMargin: number;
+          transactionCount: number;
+          averageTransaction: number;
+          averageMonthlyProfit: number;
+        };
+        breakdowns: {
+          monthly: Array<{
+            month: number;
+            monthName: string;
+            revenue: number;
+            expense: number;
+            profit: number;
+            profitMargin: number;
+            transactionCount: number;
+          }>;
+          categories: Array<{
+            rapor_bölümü: string;
+            kategori_adi: string;
+            kategori_gelir: number;
+            kategori_gider: number;
+            kategori_kar: number;
+            kategori_kar_marji: number;
+            islem_sayisi: number;
+          }>;
+          topTransactions: Array<{
+            rapor_bölümü: string;
+            islem_id: number;
+            tarih: string;
+            arac_plaka: string;
+            personel: string;
+            kategori: string;
+            aciklama: string;
+            gelir: number;
+            gider: number;
+            net_etki: number;
+            odeme_yontemi: string;
+            durum: string;
+          }>;
+        };
+      };
+          }>(`/profit/yearly?year=${year}${categoryParam}`);
+  },
+
+  // LEGACY: Keep existing methods for backward compatibility
+  getMonthlyAnalysis: async (year: number, month: number, categories?: number[]) => {
+    console.log('📡 [API-CLIENT-DEBUG] getMonthlyAnalysis called:', {
+      year,
+      month,
+      categories,
+      timestamp: new Date().toISOString(),
+      endpoint: `/transactions/profit-analysis/monthly/${year}/${month}`
+    });
+    
+    console.time('API_CLIENT_REQUEST');
+    try {
+      const response = await enhancedApiClient.get<{
+        success: boolean;
+        message: string;
+        data: {
+          period: {
+            year: number;
+            month: number;
+            monthName: string;
+            startDate: string;
+            endDate: string;
+            periodType: 'monthly';
+          };
+          summary: {
+            totalRevenue: number;
+            totalExpense: number;
+            totalProfit: number;
+            profitMargin: number;
+            transactionCount: number;
+            averageTransaction: number;
+          };
+          breakdown: {
+            byCategory: Array<{
+              category: string;
+              revenue: number;
+              expense: number;
+              profit: number;
+              profitMargin: number;
+              percentage: string;
+            }>;
+            byVehicle: Array<{
+              vehicle: string;
+              revenue: number;
+              expense: number;
+              profit: number;
+              profitMargin: number;
+              percentage: string;
+            }>;
+            byPersonnel: Array<{
+              personnel: string;
+              revenue: number;
+              expense: number;
+              profit: number;
+              profitMargin: number;
+              percentage: string;
+            }>;
+          };
+          dailyTrend: Array<{
+            date: string;
+            dayName: string;
+            revenue: number;
+            expense: number;
+            profit: number;
+            transactionCount: number;
+          }>;
+          topTransactions: Array<{
+            id: number;
+            description: string;
+            amount: number;
+            expense: number;
+            profit: number;
+            date: string;
+            category: string;
+            vehicle: string;
+            personnel: string;
+            paymentMethod: string;
+            status: string;
+          }>;
+          generalStats: {
+            revenueTransactionCount: number;
+            expenseTransactionCount: number;
+            maxRevenueTransaction: number;
+            maxExpenseTransaction: number;
+            averageRevenueTransaction: number;
+            averageExpenseTransaction: number;
+            activeVehicleCount: number;
+            activePersonnelCount: number;
+            activeCategoryCount: number;
+          };
+          transactions: Array<{
+            id: number;
+            amount: number;
+            expense: number;
+            profit: number;
+            description: string;
+            transaction_date: string;
+            category_name: string;
+            vehicle_plate: string;
+            personnel_name: string;
+            is_expense: boolean;
+            payment_method: string;
+            status: string;
+          }>;
+        };
+      }>(`/transactions/profit-analysis/monthly/${year}/${month}`);
+      console.timeEnd('API_CLIENT_REQUEST');
+      return response;
+    } catch (error) {
+      console.error('Error fetching monthly profit analysis:', error);
+      throw error;
+    }
+  },
+
+  getYearlyAnalysis: (year: number) =>
+    enhancedApiClient.get<{
+      success: boolean;
+      message: string;
+      data: {
+        period: {
+          year: number;
+          startDate: string;
+          endDate: string;
+          periodType: 'yearly';
+        };
+        summary: {
+          totalRevenue: number;
+          totalExpense: number;
+          totalProfit: number;
+          profitMargin: number;
+          totalTransactions: number;
+          averageMonthlyProfit: number;
+          averageTransactionValue: number;
+        };
+        monthlyBreakdown: Array<{
+          month: number;
+          monthName: string;
+          revenue: number;
+          expense: number;
+          profit: number;
+          profitMargin: number;
+          transactionCount: number;
+        }>;
+        transactions: Array<{
+          id: number;
+          amount: number;
+          expense: number;
+          profit: number;
+          description: string;
+          transaction_date: string;
+          category_name: string;
+          vehicle_plate: string;
+          personnel_name: string;
+          is_expense: boolean;
+          payment_method: string;
+          status: string;
+        }>;
+      };
+    }>(`/transactions/profit-analysis/yearly/${year}`),
+
+  getDailyProfit_legacy: (date: string) =>
+    enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        period: {
+          startDate: string;
+          endDate: string;
+          periodType: 'daily';
+        };
+        summary: {
+          totalRevenue: number;
+          totalExpense: number;
+          totalProfit: number;
+          profitMargin: number;
+          transactionCount: number;
+          averageTransaction: number;
+        };
+        dailyBreakdown: Array<{
+          date: string;
+          dayName: string;
+          revenue: number;
+          expense: number;
+          profit: number;
+          transactionCount: number;
+          transactions: any[];
+        }>;
+        transactions: any[];
+      };
+    }>(`/transactions/daily-profit?date=${date}`),
+};
+
+// NEW: Revenue Analysis API endpoints
+export const revenueApi = {
+  // Daily revenue analysis (using custom-revenue endpoint)
+  getDailyRevenue: (date: string) =>
+    enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        period: {
+          startDate: string;
+          endDate: string;
+          periodType: string;
+        };
+        summary: {
+          totalRevenue: number;
+          transactionCount: number;
+          averageTransaction: number;
+        };
+        dailyBreakdown: Array<{
+          day: number;
+          dayName: string;
+          date: string;
+          revenue: number;
+          transactionCount: number;
+        }>;
+        transactions: Array<{
+          id: number;
+          amount: number;
+          description: string;
+          transaction_date: string;
+          category_name: string;
+          vehicle_plate: string;
+          personnel_name: string;
+        }>;
+      };
+    }>(`/activities/custom-revenue?startDate=${date}&endDate=${date}&periodType=daily`),
+
+  // Custom date range revenue analysis
+  getCustomDateRangeRevenue: (startDate: string, endDate: string, periodType: string = 'custom') =>
+    enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        period: {
+          startDate: string;
+          endDate: string;
+          periodType: string;
+        };
+        summary: {
+          totalRevenue: number;
+          transactionCount: number;
+          averageTransaction: number;
+        };
+        dailyBreakdown: Array<{
+          day: number;
+          dayName: string;
+          date: string;
+          revenue: number;
+          transactionCount: number;
+        }>;
+        transactions: Array<{
+          id: number;
+          amount: number;
+          description: string;
+          transaction_date: string;
+          category_name: string;
+          vehicle_plate: string;
+          personnel_name: string;
+        }>;
+      };
+    }>(`/activities/custom-revenue?startDate=${startDate}&endDate=${endDate}&periodType=${periodType}`),
+
+  // Weekly revenue analysis
+  getWeeklyRevenue: (year?: number, week?: number) => {
+    const params = new URLSearchParams();
+    if (year) params.append('year', year.toString());
+    if (week) params.append('week', week.toString());
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    
+    return enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        period: {
+          year: number;
+          week: number;
+          startDate: string;
+          endDate: string;
+        };
+        summary: {
+          totalRevenue: number;
+          transactionCount: number;
+          averageTransaction: number;
+        };
+        dailyBreakdown: Array<{
+          day: number;
+          dayName: string;
+          date: string;
+          revenue: number;
+          transactionCount: number;
+        }>;
+      };
+    }>(`/activities/weekly-revenue${queryString}`);
+  },
+
+  // Monthly revenue analysis
+  getMonthlyRevenue: (year: number, month: number) =>
+    enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        period: {
+          year: number;
+          month: number;
+          monthName: string;
+        };
+        summary: {
+          totalRevenue: number;
+          transactionCount: number;
+          averageTransaction: number;
+        };
+        breakdown: {
+          byCategory: Array<{
+            category: string;
+            revenue: number;
+            percentage: string;
+          }>;
+          byVehicle: Array<{
+            vehicle: string;
+            revenue: number;
+            percentage: string;
+          }>;
+          byPersonnel: Array<{
+            personnel: string;
+            revenue: number;
+            percentage: string;
+          }>;
+        };
+        transactions: Array<{
+          id: number;
+          amount: number;
+          description: string;
+          transaction_date: string;
+          category_name: string;
+          vehicle_plate: string;
+          personnel_name: string;
+        }>;
+      };
+    }>(`/activities/monthly-revenue?year=${year}&month=${month}`),
+
+  // Yearly revenue analysis
+  getYearlyRevenue: (year: number) =>
+    enhancedApiClient.get<{
+      success: boolean;
+      data: {
+        year: number;
+        summary: {
+          totalRevenue: number;
+          totalTransactions: number;
+          averageMonthlyRevenue: number;
+          averageTransactionValue: number;
+        };
+        monthlyBreakdown: Array<{
+          month: number;
+          monthName: string;
+          revenue: number;
+          transactionCount: number;
+        }>;
+        transactions: Array<{
+          id: number;
+          amount: number;
+          description: string;
+          transaction_date: string;
+          category_name: string;
+          vehicle_plate: string;
+          personnel_name: string;
+        }>;
+      };
+    }>(`/activities/yearly-revenue?year=${year}`),
+};
+
 // Health check endpoint
 export const healthApi = {
   // Health check (public endpoint)
@@ -472,7 +1125,10 @@ export const api = {
   personnel: personnelApi,
   category: categoryApi,
   activity: activityApi,
+  profit: profitApi,
+  revenue: revenueApi,
   health: healthApi,
 };
 
 export default api; 
+

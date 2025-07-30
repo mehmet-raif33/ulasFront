@@ -3,10 +3,10 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { RootState } from "../redux/store";
-import { selectIsLoggedIn, selectUser } from "../redux/sliceses/authSlices";
+import { selectIsLoggedIn, selectUser, selectIsInitialized } from '../redux/sliceses/authSlices';
 import Link from "next/link";
 import { motion } from 'framer-motion';
-import { getPersonnelApi, createPersonnelApi } from '../api';
+import { getPersonnelApi, createPersonnelApi, updatePersonnelStatusApi } from '../api';
 import { useToast } from '../AppLayoutClient';
 
 // Personnel interface matching backend schema
@@ -78,6 +78,7 @@ function getStatusColor(status: string, theme: string) {
 const PersonnelPage: React.FC = () => {
   const theme = useSelector((state: RootState) => state.theme.theme);
   const isLoggedIn = useSelector(selectIsLoggedIn);
+  const isInitialized = useSelector(selectIsInitialized);
   const user = useSelector(selectUser);
   const router = useRouter();
   const { showToast } = useToast();
@@ -98,19 +99,18 @@ const PersonnelPage: React.FC = () => {
     role: "personnel"
   });
 
-  // Giriş yapmamış kullanıcıları landing page'e yönlendir
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/landing');
-    }
-  }, [isLoggedIn, router]);
+  // ✅ Auth kontrolü kaldırıldı - AuthInitializer yönlendirme yapacak
 
-  // Admin olmayan kullanıcıları ana sayfaya yönlendir
+  // Admin olmayan kullanıcıları ana sayfaya yönlendir - SADECE auth initialize edildikten sonra
   useEffect(() => {
+    // ✅ Auth henüz initialize edilmediyse bekle
+    if (!isInitialized) return;
+    
     if (isLoggedIn && user?.role !== 'admin') {
+      console.log('🔄 [Personnel] Non-admin user, redirecting to dashboard');
       router.push('/');
     }
-  }, [isLoggedIn, user, router]);
+  }, [isLoggedIn, isInitialized, user, router]); // ✅ isInitialized dependency eklendi
 
   // Load personnel on component mount
   useEffect(() => {
@@ -268,6 +268,55 @@ const PersonnelPage: React.FC = () => {
         message += `: ${(error as { message?: string }).message}`;
       }
       setError(message);
+      showToast(message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Personel durumu toggle fonksiyonu
+  const handleToggleStatus = async (person: Personnel, e: React.MouseEvent) => {
+    e.preventDefault(); // Link click'ini engelle
+    e.stopPropagation();
+    
+    if (user?.role !== 'admin') {
+      showToast('Bu işlem için admin yetkisi gerekli', 'error');
+      return;
+    }
+
+    // Kendi hesabını değiştirmeye çalışıyor mu kontrol et
+    if (person.id === user?.id) {
+      showToast('Kendi hesabınızın durumunu değiştiremezsiniz', 'error');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Token bulunamadı');
+      }
+
+      const newStatus = !person.is_active;
+      const response = await updatePersonnelStatusApi(token, person.id, newStatus);
+      
+      if (response.success) {
+        // Local state'i güncelle
+        setPersonnel(prev => prev.map(p => 
+          p.id === person.id 
+            ? { ...p, is_active: newStatus }
+            : p
+        ));
+        
+        const statusText = newStatus ? 'aktif' : 'pasif';
+        showToast(`${person.full_name} ${statusText} duruma getirildi`, 'success');
+      }
+    } catch (error: unknown) {
+      console.error('Error updating personnel status:', error);
+      let message = 'Personel durumu güncellenirken hata oluştu';
+      if (error && typeof error === 'object' && 'message' in error) {
+        message += `: ${(error as { message?: string }).message}`;
+      }
       showToast(message, 'error');
     } finally {
       setLoading(false);
@@ -609,39 +658,68 @@ const PersonnelPage: React.FC = () => {
             transition={{ duration: 0.3, delay: 0.1 * index }}
             whileHover={{ y: -2 }}
           >
-            <Link href={`/personnel/${person.id}-${person.full_name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'personel'}`} title={person.full_name || 'Personel Detayı'}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-semibold ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>
-                  {person.full_name || 'İsimsiz'}
-                </h3>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(person.status || 'inactive', theme)}`}>
-                  {person.status === 'active' ? 'Aktif' : 'Pasif'}
-                </span>
-              </div>
+            <div>
+              <Link href={`/personnel/${person.id}-${person.full_name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'personel'}`} title={person.full_name || 'Personel Detayı'}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className={`text-lg font-semibold ${theme === "dark" ? "text-gray-100" : "text-gray-800"}`}>
+                    {person.full_name || 'İsimsiz'}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      person.is_active 
+                        ? theme === 'dark' ? 'bg-green-900 text-green-200' : 'bg-green-100 text-green-800'
+                        : theme === 'dark' ? 'bg-red-900 text-red-200' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {person.is_active ? 'Aktif' : 'Pasif'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>E-posta:</span>
+                    <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.email || 'Belirtilmemiş'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Telefon:</span>
+                    <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.phone || 'Belirtilmemiş'}</span>
+                  </div>
+                  {person.username && (
+                    <div className="flex justify-between">
+                      <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Kullanıcı Adı:</span>
+                      <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.username}</span>
+                    </div>
+                  )}
+                  {person.role && (
+                    <div className="flex justify-between">
+                      <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Rol:</span>
+                      <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.role === 'admin' ? 'Yönetici' : 'Personel'}</span>
+                    </div>
+                  )}
+                </div>
+              </Link>
               
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>E-posta:</span>
-                  <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.email || 'Belirtilmemiş'}</span>
+              {/* Admin Toggle Button */}
+              {user?.role === 'admin' && person.id !== user?.id && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={(e) => handleToggleStatus(person, e)}
+                    disabled={loading}
+                    className={`w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      person.is_active 
+                        ? theme === 'dark'
+                          ? 'bg-red-600 hover:bg-red-700 text-white disabled:bg-red-800'
+                          : 'bg-red-500 hover:bg-red-600 text-white disabled:bg-red-300'
+                        : theme === 'dark'
+                          ? 'bg-green-600 hover:bg-green-700 text-white disabled:bg-green-800'  
+                          : 'bg-green-500 hover:bg-green-600 text-white disabled:bg-green-300'
+                    }`}
+                  >
+                    {loading ? '...' : person.is_active ? '🔴 Pasif Yap' : '🟢 Aktif Yap'}
+                  </button>
                 </div>
-                <div className="flex justify-between">
-                  <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Telefon:</span>
-                  <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.phone || 'Belirtilmemiş'}</span>
-                </div>
-                {person.username && (
-                  <div className="flex justify-between">
-                    <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Kullanıcı Adı:</span>
-                    <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.username}</span>
-                  </div>
-                )}
-                {person.role && (
-                  <div className="flex justify-between">
-                    <span className={theme === "dark" ? "text-gray-400" : "text-gray-600"}>Rol:</span>
-                    <span className={theme === "dark" ? "text-gray-200" : "text-gray-800"}>{person.role === 'admin' ? 'Yönetici' : 'Personel'}</span>
-                  </div>
-                )}
-              </div>
-            </Link>
+              )}
+            </div>
           </motion.div>
         ))}
       </motion.div>

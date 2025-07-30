@@ -74,16 +74,9 @@ const TransactionDetailPage: React.FC = () => {
         setShowStatusModal(true);
     };
 
-    // Giriş yapmamış kullanıcıları landing page'e yönlendir
+    // Transaction'ı yükle
     useEffect(() => {
-        if (!isLoggedIn) {
-            router.push('/landing');
-        }
-    }, [isLoggedIn, router]);
-
-    // Load transaction data
-    useEffect(() => {
-        if (isLoggedIn && transactionId) {
+        if (transactionId) {
             const loadTransaction = async () => {
                 try {
                     const token = localStorage.getItem('token');
@@ -116,7 +109,7 @@ const TransactionDetailPage: React.FC = () => {
             };
             loadTransaction();
         }
-    }, [isLoggedIn, transactionId]);
+    }, [transactionId]);
 
     // Status güncelleme fonksiyonu
     const handleStatusUpdate = async () => {

@@ -2,10 +2,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSelector } from 'react-redux';
 import { RootState } from '../redux/store';
-import { selectIsLoggedIn } from '../redux/sliceses/authSlices';
+import { selectIsLoggedIn, selectUser, selectIsInitialized } from '../redux/sliceses/authSlices';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getTransactionsApi, getVehiclesApi, getTransactionCategoriesApi, getTransactionsSummaryStatsApi } from '../api';
+import { getTransactionsApi, getVehiclesApi, getTransactionCategoriesApi, getTransactionsSummaryStatsApi, deleteTransactionApi } from '../api';
+import { useConfirmModal } from '../hooks/useConfirmModal';
+import ConfirmModal from '../components/ConfirmModal';
 
 // Transaction interface matching backend schema
 interface Transaction {
@@ -41,12 +43,16 @@ interface TransactionCategory {
 const TransactionsPage: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
     const isLoggedIn = useSelector(selectIsLoggedIn);
+    const isInitialized = useSelector(selectIsInitialized);
     const router = useRouter();
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [categories, setCategories] = useState<TransactionCategory[]>([]);
+    
+    // Confirm modal
+    const { modalState, showConfirmModal, hideConfirmModal, handleConfirm } = useConfirmModal();
     
     // Stats states
     const [stats, setStats] = useState({
@@ -76,12 +82,16 @@ const TransactionsPage: React.FC = () => {
         max_amount: ''
     });
 
-    // Giriş yapmamış kullanıcıları landing page'e yönlendir
+    // Giriş yapmamış kullanıcıları landing page'e yönlendir - SADECE auth initialize edildikten sonra
     useEffect(() => {
+        // ✅ Auth henüz initialize edilmediyse bekle
+        if (!isInitialized) return;
+        
         if (!isLoggedIn) {
+            console.log('🔄 [Transactions] User not logged in, redirecting to landing');
             router.push('/landing');
         }
-    }, [isLoggedIn, router]);
+    }, [isLoggedIn, isInitialized, router]); // ✅ isInitialized dependency eklendi
 
     // URL parametrelerinden kategori ID'sini al ve filtreyi ayarla
     useEffect(() => {
@@ -277,6 +287,42 @@ const TransactionsPage: React.FC = () => {
                 };
         }
     }, [theme]);
+
+    // Silme fonksiyonu
+    const handleDeleteTransaction = async (transactionId: string, description: string) => {
+        showConfirmModal(
+            'İşlemi Sil',
+            `"${description}" açıklamalı işlem kalıcı olarak silinecek. Bu işlem geri alınamaz. Emin misiniz?`,
+            async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        setError('Token bulunamadı');
+                        return;
+                    }
+
+                    await deleteTransactionApi(token, transactionId);
+                    
+                    // İşlem silindikten sonra listeyi yenile
+                    await loadData(pagination.page, filters);
+                    
+                } catch (error: unknown) {
+                    console.error('Error deleting transaction:', error);
+                    let errorMessage = 'İşlem silinirken hata oluştu';
+                    if (error && typeof error === 'object' && 'message' in error) {
+                        errorMessage += `: ${(error as { message?: string }).message}`;
+                    }
+                    setError(errorMessage);
+                }
+            },
+            {
+                confirmText: 'Sil',
+                cancelText: 'İptal',
+                type: 'danger',
+                icon: '🗑️'
+            }
+        );
+    };
 
     // Giriş yapmamış kullanıcılar için loading göster
     if (!isLoggedIn) {
@@ -633,9 +679,6 @@ const TransactionsPage: React.FC = () => {
                                                     Tarih
                                                 </th>
                                                 <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                    Araç
-                                                </th>
-                                                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
                                                     İşlem Türü
                                                 </th>
                                                 <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>
@@ -668,14 +711,6 @@ const TransactionsPage: React.FC = () => {
                                                         {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
                                                     </td>
                                                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                                                        <div>
-                                                            <div className="font-medium">{transaction.vehicle_plate || 'N/A'}</div>
-                                                            <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                                {transaction.vehicle_brand} {transaction.vehicle_model}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
                                                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                                             theme === 'dark' 
                                                                 ? 'bg-blue-900 text-blue-200' 
@@ -706,6 +741,17 @@ const TransactionsPage: React.FC = () => {
                                                     </td>
                                                     <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
                                                         <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={() => handleDeleteTransaction(transaction.id, transaction.description)}
+                                                                className={`px-2 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${
+                                                                    theme === 'dark'
+                                                                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                                                                        : 'bg-red-500 hover:bg-red-600 text-white'
+                                                                }`}
+                                                                title="İşlemi Sil"
+                                                            >
+                                                                🗑️
+                                                            </button>
                                                             <button
                                                                 onClick={() => router.push(`/transactions/${transaction.id}/edit`)}
                                                                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors duration-200 ${
@@ -754,10 +800,10 @@ const TransactionsPage: React.FC = () => {
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
                                             <h3 className={`font-semibold text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                                                {transaction.vehicle_plate || 'N/A'}
+                                                {transaction.category_name || 'N/A'}
                                             </h3>
                                             <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                {transaction.vehicle_brand} {transaction.vehicle_model}
+                                                {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
                                             </p>
                                         </div>
                                         <div className="text-right">
@@ -776,18 +822,6 @@ const TransactionsPage: React.FC = () => {
 
                                     {/* Details */}
                                     <div className="space-y-1 mb-3">
-                                        <div className="flex justify-between">
-                                            <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Tarih:</span>
-                                            <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                                                {new Date(transaction.transaction_date).toLocaleDateString('tr-TR')}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Tür:</span>
-                                            <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
-                                                {transaction.category_name || 'N/A'}
-                                            </span>
-                                        </div>
                                         <div className="flex justify-between">
                                             <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Personel:</span>
                                             <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-900'}`}>
@@ -825,6 +859,17 @@ const TransactionsPage: React.FC = () => {
                                             }`}
                                         >
                                             Detay
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteTransaction(transaction.id, transaction.description)}
+                                            className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors duration-200 ${
+                                                theme === 'dark'
+                                                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                                                    : 'bg-red-500 hover:bg-red-600 text-white'
+                                            }`}
+                                            title="İşlemi Sil"
+                                        >
+                                            🗑️
                                         </button>
                                     </div>
                                 </motion.div>
@@ -898,6 +943,19 @@ const TransactionsPage: React.FC = () => {
                         )}
                     </motion.div>
                 )}
+
+                {/* Confirm Modal */}
+                <ConfirmModal
+                    isOpen={modalState.isOpen}
+                    onClose={hideConfirmModal}
+                    onConfirm={handleConfirm}
+                    title={modalState.title}
+                    message={modalState.message}
+                    confirmText={modalState.confirmText}
+                    cancelText={modalState.cancelText}
+                    type={modalState.type}
+                    icon={modalState.icon}
+                />
             </motion.div>
         </div>
     );

@@ -75,13 +75,9 @@ const VehiclesPage: React.FC = () => {
         }
     }, [searchTerm, pagination.limit]);
 
-    // Giriş yapmamış kullanıcıları landing page'e yönlendir
-    useEffect(() => {
-        if (!isLoggedIn) {
-            router.push('/landing');
-        }
-    }, [isLoggedIn, router]);
-
+    // ✅ Auth kontrolü kaldırıldı - AuthInitializer yönlendirme yapacak
+    
+    // Vehicles'ı yükle
     useEffect(() => {
         if (isLoggedIn) {
             loadVehicles(1, true);
